@@ -54,6 +54,12 @@ const Header = () => {
               Services
             </button>
             <button
+              onClick={() => scrollToSection('references')}
+              className="text-foreground hover:text-accent font-medium transition-smooth"
+            >
+              Références
+            </button>
+            <button
               onClick={() => scrollToSection('about')}
               className="text-foreground hover:text-accent font-medium transition-smooth"
             >
@@ -104,6 +110,12 @@ const Header = () => {
                 className="text-left text-foreground hover:text-accent font-medium transition-smooth py-2"
               >
                 Services
+              </button>
+              <button
+                onClick={() => scrollToSection('references')}
+                className="text-left text-foreground hover:text-accent font-medium transition-smooth py-2"
+              >
+                Références
               </button>
               <button
                 onClick={() => scrollToSection('about')}

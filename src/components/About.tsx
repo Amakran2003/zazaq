@@ -85,26 +85,6 @@ const About = () => {
           ))}
         </div>
 
-        {/* Technology Stack */}
-        <div className="mt-16 text-center animate-slide-up">
-          <h3 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-8">
-            Technologies de Pointe
-          </h3>
-          <div className="flex flex-wrap justify-center gap-4 max-w-4xl mx-auto">
-            {[
-              "React", "TypeScript", "Insta360 X3", "Next.js", "Tailwind CSS", 
-              "WordPress", "Vercel", "Git", "Figma", "Adobe Suite"
-            ].map((tech, index) => (
-              <span 
-                key={index}
-                className="px-4 py-2 bg-muted/50 text-muted-foreground rounded-full text-sm font-medium hover:bg-accent/10 hover:text-accent transition-smooth hover-scale"
-                style={{ animationDelay: `${index * 0.05}s` }}
-              >
-                {tech}
-              </span>
-            ))}
-          </div>
-        </div>
       </div>
     </section>
   );
