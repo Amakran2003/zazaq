@@ -24,7 +24,7 @@ const Services = () => {
         { size: "Espace Moyen (jusqu'à 120m²)", price: "500 €" },
         { size: "Grand Espace (>120m²)", price: "750 €" }
       ],
-      icon: "🎯",
+      
       gradient: "from-accent to-accent-light"
     },
     {
@@ -39,7 +39,7 @@ const Services = () => {
       pricing: [
         { size: "À partir de", price: "1 500 €" }
       ],
-      icon: "💻",
+      
       gradient: "from-primary to-primary-light"
     }
   ];
@@ -64,9 +64,6 @@ const Services = () => {
               style={{ animationDelay: `${index * 0.2}s` }}
             >
               <CardHeader className="text-center pb-4">
-                <div className="text-4xl mb-4 group-hover:animate-bounce transition-transform">
-                  {service.icon}
-                </div>
                 <CardTitle className="text-2xl md:text-3xl font-display font-bold text-foreground mb-2">
                   {service.title}
                 </CardTitle>

@@ -59,9 +59,9 @@ const Hero = () => {
             
             <Button
               onClick={scrollToContact}
-              variant="outline"
+              variant="secondary"
               size="lg"
-              className="border-white/30 text-white hover:bg-white/10 hover:border-white/50 font-semibold text-lg px-8 py-3 backdrop-blur-sm"
+              className="bg-white/20 text-white border border-white/40 hover:bg-white/30 hover:border-white/60 font-semibold text-lg px-8 py-3 backdrop-blur-sm"
             >
               Obtenir un Devis
             </Button>

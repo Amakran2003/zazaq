@@ -16,7 +16,7 @@ const NotFound = () => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-subtle">
       <div className="text-center p-8 max-w-md mx-auto">
-        <div className="text-6xl mb-6 animate-bounce-in">🔍</div>
+        
         <h1 className="text-4xl md:text-5xl font-display font-bold text-foreground mb-4 animate-slide-up">
           Page Introuvable
         </h1>

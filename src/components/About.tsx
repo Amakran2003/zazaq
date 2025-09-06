@@ -1,26 +1,23 @@
 const About = () => {
   const stats = [
-    { number: "50+", label: "Projets Réalisés", icon: "🚀" },
-    { number: "98%", label: "Clients Satisfaits", icon: "😊" },
-    { number: "24h", label: "Temps de Réponse", icon: "⚡" },
-    { number: "100%", label: "Made in France", icon: "🇫🇷" }
+    { number: "50+", label: "Projets Réalisés" },
+    { number: "98%", label: "Clients Satisfaits" },
+    { number: "24h", label: "Temps de Réponse" },
+    { number: "100%", label: "Made in France" }
   ];
 
   const values = [
     {
       title: "Excellence Technique",
-      description: "Nous utilisons les dernières technologies pour garantir des résultats de qualité supérieure",
-      icon: "🔧"
+      description: "Nous utilisons les dernières technologies pour garantir des résultats de qualité supérieure"
     },
     {
       title: "Service Client",
-      description: "Support réactif et accompagnement personnalisé tout au long de votre projet",
-      icon: "💬"
+      description: "Support réactif et accompagnement personnalisé tout au long de votre projet"
     },
     {
       title: "Innovation",
-      description: "Toujours à la pointe des tendances digitales pour vous offrir les meilleures solutions",
-      icon: "💡"
+      description: "Toujours à la pointe des tendances digitales pour vous offrir les meilleures solutions"
     }
   ];
 
@@ -59,7 +56,7 @@ const About = () => {
               className="text-center p-6 bg-gradient-card rounded-xl shadow-soft hover-lift animate-bounce-in"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
-              <div className="text-3xl mb-2">{stat.icon}</div>
+              
               <div className="text-2xl md:text-3xl font-display font-bold text-accent mb-1">
                 {stat.number}
               </div>
@@ -78,9 +75,6 @@ const About = () => {
               className="text-center p-6 hover-lift animate-fade-in"
               style={{ animationDelay: `${index * 0.2}s` }}
             >
-              <div className="text-4xl mb-4 hover-scale inline-block">
-                {value.icon}
-              </div>
               <h4 className="text-xl font-display font-bold text-foreground mb-3">
                 {value.title}
               </h4>
