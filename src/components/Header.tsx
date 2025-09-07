@@ -104,31 +104,40 @@ const Header = () => {
         </div>
       </nav>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu Fullscreen */}
       {isMobileMenuOpen && (
-        <div className="md:hidden fixed top-14 inset-x-0 animate-fade-in z-50">
-          <div className="bg-background/95 backdrop-blur-md rounded-xl shadow-medium border border-white/10 mx-auto nav-mobile-xs nav-mobile-sm nav-mobile-md w-[40%] max-w-[220px] min-w-[140px] overflow-hidden">
-            <div className="flex flex-col divide-y divide-border/10">
-              {navItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => scrollToSection(item.id)}
-                  className="text-center text-foreground hover:text-accent font-medium transition-smooth py-2 w-full px-1 hover:bg-white/5 text-xs sm:text-sm"
-                >
-                  {item.label}
-                </button>
-              ))}
-              <div className="p-2">
-                <Button
-                  onClick={() => scrollToSection('contact')}
-                  variant="default"
-                  size="sm"
-                  className="bg-gradient-accent hover:opacity-90 shadow-soft hover:shadow-glow w-full text-xs py-1"
-                >
-                  Contact
-                </Button>
-              </div>
-            </div>
+        <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-md animate-fade-in flex flex-col">
+          {/* Close button top right */}
+          <div className="flex justify-end p-4">
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="p-2 text-foreground hover:text-accent transition-smooth"
+              aria-label="Fermer le menu"
+            >
+              <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          {/* Navigation items centered */}
+          <div className="flex-1 flex flex-col items-center justify-center gap-6">
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => scrollToSection(item.id)}
+                className="text-2xl font-bold text-foreground hover:text-accent transition-smooth py-2 px-6"
+              >
+                {item.label}
+              </button>
+            ))}
+            <Button
+              onClick={() => scrollToSection('contact')}
+              variant="default"
+              size="lg"
+              className="bg-gradient-accent hover:opacity-90 shadow-soft hover:shadow-glow w-full max-w-xs text-xl py-2 mt-4"
+            >
+              Contact
+            </Button>
           </div>
         </div>
       )}
