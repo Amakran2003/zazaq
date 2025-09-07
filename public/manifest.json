@@ -2,7 +2,7 @@
   "name": "Zazaq - Votre vision, en 360°",
   "short_name": "Zazaq",
   "description": "Spécialiste en visites virtuelles 360° et développement web sur mesure",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#2563eb",
   "theme_color": "#2563eb",
