@@ -80,13 +80,6 @@ const Footer = () => {
             </div>
           </div>
         </div>
-
-        {/* Technical Info */}
-        <div className="mt-6 text-center">
-          <p className="text-primary-foreground/40 text-xs">
-            Site développé avec React, TypeScript & Tailwind CSS • Optimisé pour la performance et l'accessibilité
-          </p>
-        </div>
       </div>
     </footer>
   );

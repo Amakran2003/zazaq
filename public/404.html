@@ -46,6 +46,14 @@
       gtag('js', new Date());
       gtag('config', 'G-N4HHP0YRHT');
     </script>
+    
+    <!-- Script de redirection SPA pour la page 404 -->
+    <script>
+      // Rediriger vers la racine tout en préservant le chemin pour React Router
+      const path = window.location.pathname;
+      sessionStorage.setItem('redirect_path', path);
+      window.location.href = '/';
+    </script>
   </head>
 
   <body>

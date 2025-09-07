@@ -10,17 +10,25 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
+    // Ajouter une classe au document pour indiquer que l'application est en mode splashscreen
+    document.body.classList.add('splash-active');
+    
     // Afficher le splash screen pendant 2.5 secondes
     const timer = setTimeout(() => {
       setIsVisible(false);
       
       // Donner du temps à l'animation de sortie avant de déclencher onComplete
       setTimeout(() => {
+        document.body.classList.remove('splash-active');
+        document.body.classList.add('app-ready');
         onComplete();
       }, 800);
     }, 2500);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      document.body.classList.remove('splash-active');
+    };
   }, [onComplete]);
 
   return (

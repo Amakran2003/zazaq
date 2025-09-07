@@ -131,7 +131,7 @@ const Hero = () => {
               <svg className="w-5 h-5 text-accent-light flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              <span className="text-sm md:text-base">Livraison rapide en 48h</span>
+              <span className="text-sm md:text-base">Livraison rapide</span>
             </div>
           </div>
         </div>

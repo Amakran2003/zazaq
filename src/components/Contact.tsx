@@ -288,16 +288,7 @@ const Contact = () => {
                     <strong className="text-foreground">Service rapide:</strong> Projets livrés dans les délais convenus
                   </p>
                 </div>
-                <div className="flex items-start gap-4 group">
-                  <div className="w-8 h-8 bg-gradient-to-br from-primary/10 to-accent/10 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-primary/20 transition-colors">
-                    <svg className="w-4 h-4 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                  <p className="text-muted-foreground">
-                    <strong className="text-foreground">Support français:</strong> Accompagnement personnalisé en français
-                  </p>
-                </div>
+                
                 <div className="flex items-start gap-4 group">
                   <div className="w-8 h-8 bg-gradient-to-br from-primary/10 to-accent/10 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-primary/20 transition-colors">
                     <svg className="w-4 h-4 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">

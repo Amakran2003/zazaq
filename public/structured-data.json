@@ -1,0 +1,51 @@
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Zazaq",
+  "url": "https://zazaq.fr",
+  "logo": "https://zazaq.fr/favicon noir.png",
+  "sameAs": [
+    "https://www.facebook.com/zazaqfr",
+    "https://www.instagram.com/zazaqfr",
+    "https://www.linkedin.com/company/zazaq"
+  ],
+  "description": "Zazaq est spécialiste en visites virtuelles 360° et développement web sur mesure. Nous transformons votre présence digitale avec notre approche 360°.",
+  "address": {
+    "@type": "PostalAddress",
+    "addressCountry": "FR",
+    "addressLocality": "France"
+  },
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "telephone": "+33-XXXXXXXXX",
+    "contactType": "customer service",
+    "email": "contact@zazaq.fr",
+    "availableLanguage": ["French"]
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://zazaq.fr"
+  },
+  "offers": {
+    "@type": "AggregateOffer",
+    "priceCurrency": "EUR",
+    "offerCount": "3",
+    "offers": [
+      {
+        "@type": "Offer",
+        "name": "Visites Virtuelles 360°",
+        "description": "Transformez vos espaces physiques en expériences digitales immersives"
+      },
+      {
+        "@type": "Offer",
+        "name": "Développement Web",
+        "description": "Création de sites web professionnels et solutions digitales sur mesure"
+      },
+      {
+        "@type": "Offer",
+        "name": "Communication Digitale",
+        "description": "Stratégie de communication digitale globale pour votre entreprise"
+      }
+    ]
+  }
+}
