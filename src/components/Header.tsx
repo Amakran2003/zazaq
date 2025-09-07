@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { useIsMobile } from '@/hooks/use-mobile';
+import logo from '@/assets/logo.png';
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -21,119 +24,114 @@ const Header = () => {
     setIsMobileMenuOpen(false);
   };
 
+  // Navigation items array for DRY code
+  const navItems = [
+    { id: 'hero', label: 'Accueil' },
+    { id: 'services', label: 'Services' },
+    { id: 'references', label: 'Références' },
+    { id: 'about', label: 'À Propos' },
+  ];
+
   return (
     <header 
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled 
-          ? 'bg-background/90 backdrop-blur-md shadow-medium' 
-          : 'bg-transparent'
-      }`}
+      className="fixed top-0 left-0 right-0 z-50 transition-all duration-300 flex justify-center pt-2 sm:pt-3 md:pt-4"
     >
-      <nav className="container mx-auto px-6 py-4">
-        <div className="flex justify-between items-center">
+      {/* Main navigation bar */}
+      <nav 
+        className={`mx-auto rounded-full transition-all duration-300 nav-mobile-xs nav-mobile-sm nav-mobile-md w-[40%] max-w-full md:w-auto ${
+          isScrolled 
+            ? 'bg-primary/90 backdrop-blur-md shadow-lg' 
+            : 'bg-primary/40 backdrop-blur-md shadow-lg shadow-white/10'
+        }`}
+      >
+        <div className="w-full px-2 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between">
           {/* Logo */}
-          <button
-            onClick={() => scrollToSection('hero')}
-            className="text-2xl md:text-3xl font-display font-bold text-primary hover:text-accent transition-smooth"
-          >
-            Zazaq
-          </button>
-
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="flex items-center">
             <button
               onClick={() => scrollToSection('hero')}
-              className="text-foreground hover:text-accent font-medium transition-smooth"
+              className="flex items-center transition-smooth md:mr-10"
             >
-              Accueil
+              <img 
+                src={logo} 
+                alt="Zazaq Logo" 
+                className={`h-5 sm:h-6 md:h-7 w-auto ${isScrolled ? 'brightness-125' : ''} transition-all duration-300`} 
+              />
             </button>
-            <button
-              onClick={() => scrollToSection('services')}
-              className="text-foreground hover:text-accent font-medium transition-smooth"
-            >
-              Services
-            </button>
-            <button
-              onClick={() => scrollToSection('references')}
-              className="text-foreground hover:text-accent font-medium transition-smooth"
-            >
-              Références
-            </button>
-            <button
-              onClick={() => scrollToSection('about')}
-              className="text-foreground hover:text-accent font-medium transition-smooth"
-            >
-              À Propos
-            </button>
+          </div>
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-4 lg:space-x-8">
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => scrollToSection(item.id)}
+                className="font-medium text-white hover:text-accent-light transition-smooth shadow-text-sm text-sm lg:text-base"
+              >
+                {item.label}
+              </button>
+            ))}
             <Button
               onClick={() => scrollToSection('contact')}
               variant="default"
-              className="bg-gradient-accent hover:opacity-90 shadow-soft hover:shadow-glow"
+              size="sm"
+              className="bg-gradient-accent hover:opacity-90 shadow-soft hover:shadow-glow shadow-white/10 text-sm lg:text-base py-1"
             >
               Contact
             </Button>
           </div>
 
           {/* Mobile Menu Button */}
-          <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden p-2 text-foreground hover:text-accent transition-smooth"
-            aria-label="Menu"
-          >
-            <svg 
-              className="w-6 h-6" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
+          <div className="block md:hidden">
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="p-1 text-white hover:text-accent-light transition-smooth shadow-text-sm"
+              aria-label="Menu"
             >
-              {isMobileMenuOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              )}
-            </svg>
-          </button>
+              <svg 
+                className="w-5 h-5 menu-icon-xs" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                {isMobileMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
+          </div>
         </div>
+      </nav>
 
-        {/* Mobile Menu */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden mt-4 p-4 bg-background/95 backdrop-blur-md rounded-xl shadow-medium animate-slide-down">
-            <div className="flex flex-col space-y-4">
-              <button
-                onClick={() => scrollToSection('hero')}
-                className="text-left text-foreground hover:text-accent font-medium transition-smooth py-2"
-              >
-                Accueil
-              </button>
-              <button
-                onClick={() => scrollToSection('services')}
-                className="text-left text-foreground hover:text-accent font-medium transition-smooth py-2"
-              >
-                Services
-              </button>
-              <button
-                onClick={() => scrollToSection('references')}
-                className="text-left text-foreground hover:text-accent font-medium transition-smooth py-2"
-              >
-                Références
-              </button>
-              <button
-                onClick={() => scrollToSection('about')}
-                className="text-left text-foreground hover:text-accent font-medium transition-smooth py-2"
-              >
-                À Propos
-              </button>
-              <Button
-                onClick={() => scrollToSection('contact')}
-                variant="default"
-                className="bg-gradient-accent hover:opacity-90 shadow-soft hover:shadow-glow w-full"
-              >
-                Contact
-              </Button>
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden fixed top-14 inset-x-0 animate-fade-in z-50">
+          <div className="bg-background/95 backdrop-blur-md rounded-xl shadow-medium border border-white/10 mx-auto nav-mobile-xs nav-mobile-sm nav-mobile-md w-[40%] max-w-[220px] min-w-[140px] overflow-hidden">
+            <div className="flex flex-col divide-y divide-border/10">
+              {navItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => scrollToSection(item.id)}
+                  className="text-center text-foreground hover:text-accent font-medium transition-smooth py-2 w-full px-1 hover:bg-white/5 text-xs sm:text-sm"
+                >
+                  {item.label}
+                </button>
+              ))}
+              <div className="p-2">
+                <Button
+                  onClick={() => scrollToSection('contact')}
+                  variant="default"
+                  size="sm"
+                  className="bg-gradient-accent hover:opacity-90 shadow-soft hover:shadow-glow w-full text-xs py-1"
+                >
+                  Contact
+                </Button>
+              </div>
             </div>
           </div>
-        )}
-      </nav>
+        </div>
+      )}
     </header>
   );
 };

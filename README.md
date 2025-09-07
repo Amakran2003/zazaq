@@ -1,73 +1,29 @@
-# Welcome to your Lovable project
+# Zazaq
 
-## Project info
+![Zazaq Logo](src/assets/logo.png)
 
-**URL**: https://lovable.dev/projects/c948e286-b934-4689-961a-0ea320f6a98a
+## À propos
 
-## How can I edit this code?
+Zazaq est une agence de communication et marketing digital offrant une perspective à 360° sur vos projets. Notre approche holistique vous permet de visualiser vos objectifs sous tous les angles pour des résultats optimaux.
 
-There are several ways of editing your application.
+## Notre vision
 
-**Use Lovable**
+Chez Zazaq, nous croyons que chaque projet mérite une attention particulière et une vision globale. Notre slogan **"Votre vision, en 360°"** reflète notre engagement à explorer toutes les facettes de votre communication pour garantir une stratégie cohérente et efficace.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/c948e286-b934-4689-961a-0ea320f6a98a) and start prompting.
+## Nos services
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Stratégie de marque** : Positionnement, identité visuelle et messagerie
+- **Communication digitale** : Sites web, applications et présence en ligne
+- **Marketing de contenu** : Création de contenu engageant et stratégique
+- **Campagnes publicitaires** : Conception et déploiement multi-canaux
+- **Analyse et optimisation** : Mesure de performance et amélioration continue
 
-**Use your preferred IDE**
+## Notre approche
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Nous travaillons en étroite collaboration avec nos clients pour comprendre leurs besoins spécifiques et développer des solutions personnalisées. Notre processus de création est transparent et itératif, permettant des ajustements à chaque étape pour atteindre l'excellence.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Contact
 
-Follow these steps:
+Pour toute question ou information supplémentaire, n'hésitez pas à nous contacter.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/c948e286-b934-4689-961a-0ea320f6a98a) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+**Zazaq** - Votre vision, en 360°

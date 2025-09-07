@@ -1,3 +1,5 @@
+import logo from '@/assets/logo.png';
+
 const Footer = () => {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -13,12 +15,16 @@ const Footer = () => {
           <div className="text-center md:text-left">
             <button
               onClick={scrollToTop}
-              className="text-2xl font-display font-bold mb-4 hover:text-accent transition-smooth"
+              className="flex justify-center md:justify-start items-center mb-4 hover:opacity-90 transition-smooth"
             >
-              Zazaq
+              <img 
+                src={logo} 
+                alt="Zazaq Logo" 
+                className="h-7 w-auto brightness-200" 
+              />
             </button>
             <p className="text-primary-foreground/80 leading-relaxed">
-              Spécialiste français des visites virtuelles 360° et du développement web moderne pour les entreprises.
+              Entreprise spécialisée dans les visites virtuelles immersives en 360° pour valoriser vos espaces et attirer plus de clients.
             </p>
           </div>
 
@@ -27,9 +33,9 @@ const Footer = () => {
             <h3 className="font-display font-bold text-lg mb-4">Nos Services</h3>
             <ul className="space-y-2 text-primary-foreground/80">
               <li>Visites Virtuelles 360°</li>
-              <li>Développement Web React</li>
-              <li>Sites WordPress</li>
-              <li>Solutions Personnalisées</li>
+              <li>Capture Photographique HD</li>
+              <li>Points d'Intérêt Interactifs</li>
+              <li>Intégration Sur Mesure</li>
             </ul>
           </div>
 
@@ -46,7 +52,6 @@ const Footer = () => {
                 </a>
               </p>
               <p>Réponse sous 24h</p>
-              <p>Service en français</p>
             </div>
           </div>
         </div>
@@ -55,7 +60,7 @@ const Footer = () => {
         <div className="border-t border-primary-foreground/20 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-primary-foreground/60 text-sm text-center md:text-left">
-              &copy; {currentYear} Zazaq. Tous droits réservés. Made in France 🌟
+              &copy; {currentYear} Zazaq. Tous droits réservés.
             </p>
             
             <div className="flex items-center space-x-6 text-sm">
