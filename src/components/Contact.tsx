@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import emailjs from '@emailjs/browser';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,9 +17,33 @@ const Contact = () => {
     message: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [emailJSError, setEmailJSError] = useState<string | null>(null);
   const { toast } = useToast();
 
+  // Initialiser EmailJS au chargement du composant
+  useEffect(() => {
+    const publicKey = 'Golcv37AOhZNxZiCH';
+    try {
+      // Utiliser la méthode d'initialisation la plus récente
+      emailjs.init({
+        publicKey: publicKey,
+        blockHeadless: false, // Permettre les tests en mode headless
+        limitRate: {
+          throttle: 2000 // Limitation d'envoi pour éviter les erreurs de rate-limit
+        }
+      });
+      console.log('EmailJS initialisé avec succès');
+    } catch (error) {
+      console.error('Erreur lors de l\'initialisation d\'EmailJS:', error);
+    }
+  }, []);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    // Réinitialiser les messages d'erreur quand l'utilisateur modifie le formulaire
+    if (emailJSError) {
+      setEmailJSError(null);
+    }
+    
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -29,40 +53,188 @@ const Contact = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Vérifier si l'email est valide avant de soumettre
+    if (!formData.email || !formData.email.includes('@') || formData.email.trim() === '') {
+      setEmailJSError('Veuillez entrer une adresse e-mail valide.');
+      toast({
+        title: "Validation",
+        description: "Veuillez entrer une adresse e-mail valide.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
 
     try {
-      // EmailJS réactivé
-      const serviceId = 'service_3xj0898'; // à personnaliser
-      const templateId = 'template_1gy1dap'; // à personnaliser
-      const autoReplyTemplateId = 'template_pr6i63h';
-      const publicKey = 'Golcv37AOhZNxZiCH'; // Clé publique EmailJS directement en dur
+      // Configuration EmailJS
+      const serviceId = 'service_3xj0898'; // Assurez-vous que cet ID correspond à votre service EmailJS
+      const templateId = 'template_1gy1dap'; // Template pour la notification à l'entreprise
+      const autoReplyTemplateId = 'template_pr6i63h'; // Template pour l'auto-réponse
+      const publicKey = 'Golcv37AOhZNxZiCH';
+      
+      // Vérifier que les configurations sont définies
+      if (!serviceId || !templateId || !autoReplyTemplateId || !publicKey) {
+        throw new Error('Configuration EmailJS incomplète. Veuillez vérifier les IDs de service et templates.');
+      }
 
-      // 1. Email vers l'entreprise
-      await emailjs.send(serviceId, templateId, {
+      // Préparation des données pour le template
+      const templateParams = {
         from_name: formData.name,
         from_email: formData.email,
-        subject: formData.subject,
+        subject: formData.subject || 'Demande de contact Zazaq',
         message: formData.message,
-      }, publicKey);
-
-      // 2. Email auto-reply vers l'utilisateur
-      await emailjs.send(serviceId, autoReplyTemplateId, {
-        to_email: formData.email,
+        reply_to: formData.email, // Important pour pouvoir répondre
+      };
+      
+      // Préparation des données pour l'auto-réponse
+      const autoReplyParams = {
+        user_name: formData.name,
+        user_email: formData.email,
         to_name: formData.name,
-        subject: formData.subject,
+        to_email: formData.email, 
+        from_name: 'Zazaq',
+        from_email: 'contact@zazaq.fr',
+        subject: `Re: ${formData.subject || 'Votre demande de contact Zazaq'}`,
         message: formData.message,
-      }, publicKey);
+        reply_to: 'contact@zazaq.fr',
+        // Ajout d'autres champs possibles pour assurer la compatibilité
+        email: formData.email,
+        name: formData.name
+      };
 
+      // Tests séparés pour identifier le problème
+      try {
+        console.log('Envoi email à l\'entreprise...', { serviceId, templateId, templateParams });
+        
+        // 1. Email vers l'entreprise
+        const responseEntreprise = await emailjs.send(
+          serviceId, 
+          templateId, 
+          templateParams, 
+          {
+            publicKey: publicKey
+          }
+        );
+        console.log('Réponse de l\'envoi vers l\'entreprise:', responseEntreprise);
+        
+        // Si on arrive ici, le premier email a réussi
+        toast({
+          title: "Message envoyé",
+          description: "Votre demande a bien été transmise à notre équipe.",
+        });
+        
+        // On réinitialise le formulaire après l'envoi réussi du premier email
+        setFormData({ name: '', email: '', subject: '', message: '' });
+        
+        // On essaie maintenant l'auto-réponse mais on ne bloque pas le processus s'il échoue
+        try {
+          console.log('Tentative d\'envoi de l\'auto-réponse...', { serviceId, autoReplyTemplateId });
+          
+          // Pour l'auto-réponse, essayons tous les formats possibles de variables
+          const autoReplyData = {
+            // Format standard EmailJS
+            to_email: formData.email,
+            from_email: 'contact@zazaq.fr',
+            to_name: formData.name,
+            from_name: 'Zazaq',
+            message: `Bonjour ${formData.name},\n\nNous avons bien reçu votre demande concernant "${formData.subject || 'votre projet'}". Notre équipe l'examine et vous répondra dans les plus brefs délais.\n\nCordialement,\nL'équipe Zazaq`,
+            subject: 'Confirmation de votre demande chez Zazaq',
+            reply_to: 'contact@zazaq.fr',
+            
+            // Formats alternatifs pour différentes configurations de template
+            email: formData.email,
+            name: formData.name,
+            recipient: formData.email,
+            recipient_name: formData.name,
+            user_email: formData.email,
+            user_name: formData.name,
+            client_email: formData.email,
+            client_name: formData.name
+          };
+          
+          console.log('Paramètres de l\'auto-réponse:', autoReplyData);
+          
+          const responseAutoReply = await emailjs.send(
+            serviceId, 
+            autoReplyTemplateId, 
+            autoReplyData, 
+            {
+              publicKey: publicKey
+            }
+          );
+          console.log('Auto-réponse envoyée avec succès:', responseAutoReply);
+        } catch (autoReplyError: any) {
+          // On log l'erreur mais on ne fait pas échouer le processus entier
+          console.error('Erreur lors de l\'envoi de l\'auto-réponse:', autoReplyError);
+          
+          // Essayons une dernière tentative avec une configuration différente
+          try {
+            console.log('Dernière tentative d\'auto-réponse avec configuration alternative...');
+            
+            // Version simplifiée au maximum
+            const minimalParams = {
+              to: formData.email,
+              from_name: 'Zazaq',
+              subject: 'Confirmation de réception',
+              message: 'Merci pour votre message. Nous vous répondrons prochainement.'
+            };
+            
+            // Essayons un service général d'EmailJS
+            await emailjs.send(
+              serviceId, 
+              autoReplyTemplateId,
+              minimalParams,
+              publicKey
+            );
+            console.log('Auto-réponse de secours envoyée avec succès');
+          } catch (finalError) {
+            console.error('Échec définitif de l\'auto-réponse:', finalError);
+          }
+        }
+        
+        // On sort avec succès car le premier email a été envoyé
+        return;
+        
+      } catch (innerError: any) {
+        console.error('Erreur pendant l\'envoi à l\'entreprise:', innerError);
+        throw innerError; // On remonte l'erreur au bloc catch principal
+      }
+
+      console.log('Emails envoyés avec succès');
       toast({
         title: "Message envoyé !",
         description: "Votre demande a bien été envoyée. Nous vous répondrons rapidement.",
       });
       setFormData({ name: '', email: '', subject: '', message: '' });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Erreur EmailJS:', error);
+      
+      // Récupérer des détails d'erreur plus précis
+      let errorMessage = 'Erreur inconnue';
+      if (error.text) {
+        errorMessage = error.text;
+      } else if (error.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error.status) {
+        // Erreurs avec code HTTP
+        errorMessage = `Erreur ${error.status}: ${error.text || 'Problème de serveur'}`;
+      }
+      
+      // Logs détaillés pour le débogage
+      console.error('Détails de l\'erreur:', {
+        message: errorMessage,
+        formData: formData,
+        errorObject: error
+      });
+      
+      setEmailJSError(errorMessage);
       toast({
-        title: "Erreur",
-        description: "Une erreur est survenue lors de l'envoi. Veuillez réessayer.",
+        title: "Erreur d'envoi",
+        description: `Une erreur est survenue: ${errorMessage}`,
         variant: "destructive",
       });
     } finally {
@@ -192,6 +364,13 @@ const Contact = () => {
                   />
                 </div>
 
+                {emailJSError && (
+                  <div className="p-3 mb-3 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive">
+                    <div className="font-semibold mb-1">Erreur lors de l'envoi:</div>
+                    <div>{emailJSError}</div>
+                  </div>
+                )}
+                
                 <Button
                   type="submit"
                   disabled={isSubmitting}
