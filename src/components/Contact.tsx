@@ -1,5 +1,5 @@
 import { useState } from 'react';
-// import emailjs from '@emailjs/browser';
+import emailjs from '@emailjs/browser';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -32,34 +32,37 @@ const Contact = () => {
     setIsSubmitting(true);
 
     try {
-      // EmailJS temporairement désactivé
-      // const serviceId = 'service_xxxxx';
-      // const templateId = 'template_xxxxx';
-      // const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
-      // await emailjs.send(serviceId, templateId, {
-      //   from_name: formData.name,
-      //   from_email: formData.email,
-      //   subject: formData.subject,
-      //   message: formData.message,
-      // }, publicKey);
+      // EmailJS réactivé
+      const serviceId = 'service_3xj0898'; // à personnaliser
+      const templateId = 'template_1gy1dap'; // à personnaliser
+      const autoReplyTemplateId = 'template_pr6i63h';
+      const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
-      // Utilisation du mailto en attendant
-      const subject = encodeURIComponent(formData.subject || 'Demande de contact - Zazaq');
-      const body = encodeURIComponent(
-        `Bonjour,\n\n${formData.message}\n\nCordialement,\n${formData.name}\nEmail: ${formData.email}`
-      );
-      const mailtoLink = `mailto:contact@zazaq.fr?subject=${subject}&body=${body}`;
-      window.location.href = mailtoLink;
+      // 1. Email vers l'entreprise
+      await emailjs.send(serviceId, templateId, {
+        from_name: formData.name,
+        from_email: formData.email,
+        subject: formData.subject,
+        message: formData.message,
+      }, publicKey);
+
+      // 2. Email auto-reply vers l'utilisateur
+      await emailjs.send(serviceId, autoReplyTemplateId, {
+        to_email: formData.email,
+        to_name: formData.name,
+        subject: formData.subject,
+        message: formData.message,
+      }, publicKey);
 
       toast({
         title: "Message envoyé !",
-        description: "Votre client email va s'ouvrir. Nous vous répondrons rapidement.",
+        description: "Votre demande a bien été envoyée. Nous vous répondrons rapidement.",
       });
       setFormData({ name: '', email: '', subject: '', message: '' });
     } catch (error) {
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue. Veuillez réessayer.",
+        description: "Une erreur est survenue lors de l'envoi. Veuillez réessayer.",
         variant: "destructive",
       });
     } finally {
