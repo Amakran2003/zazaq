@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
-import logo from '@/assets/logo.png';
+import logo from '@/assets/logo1.png';
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);

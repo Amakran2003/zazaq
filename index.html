@@ -56,6 +56,35 @@
     <div id="root"></div>
     <script type="module" src="./src/main.tsx"></script>
     <script src="./favicon-switcher.js"></script>
-    <script type="application/ld+json" src="./structured-data.json"></script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Zazaq",
+      "url": "https://zazaq.fr",
+      "logo": "https://zazaq.fr/favicon bleu.png",
+      "sameAs": [
+        "https://www.facebook.com/zazaqfr",
+        "https://www.instagram.com/zazaqfr",
+        "https://www.linkedin.com/company/zazaq"
+      ],
+      "description": "Zazaq est spécialiste en visites virtuelles 360° et développement web sur mesure. Nous transformons votre présence digitale avec notre approche 360°.",
+      "address": {
+        "@type": "PostalAddress",
+        "addressCountry": "FR",
+        "addressLocality": "France"
+      },
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer service",
+        "email": "contact@zazaq.fr",
+        "availableLanguage": ["French"]
+      },
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "https://zazaq.fr"
+      }
+    }
+    </script>
   </body>
 </html>

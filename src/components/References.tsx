@@ -10,7 +10,8 @@ const References = () => {
       title: "Exemple de Visite Virtuelle 360°",
       description: "Voici un aperçu du type d'expérience immersive que nous pouvons créer pour votre espace",
       tags: ["Immersif", "Interactif", "Haute définition"],
-      iframeUrl: "https://momento360.com/e/u/47b0c03467b94acb913801f5e6cfb734?utm_campaign=embed&utm_source=other&heading=344.07&pitch=-47.98&field-of-view=81&size=medium&display-plan=true", 
+      // krpano demo viewer, URL not shown anywhere
+      iframeUrl: "https://krpano.com/releases/1.23/viewer/krpano.html?xml=examples/demotour-apartment/tour.xml",
       placeholder: false
     }
   ];
