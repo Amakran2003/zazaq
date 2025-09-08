@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import emailjs from '@emailjs/browser';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,14 +15,14 @@ const Contact = () => {
     email: '',
     subject: '',
     message: '',
-    captchaInput: '' // Added for OpenCaptcha input
+    captchaInput: '' // Pour le OpenCaptcha
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [emailJSError, setEmailJSError] = useState<string | null>(null);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaError, setCaptchaError] = useState<boolean>(false);
   const [captchaImage, setCaptchaImage] = useState<string | null>(null);
-  const [captchaText, setCaptchaText] = useState<string>(''); // The text used to generate the captcha (server-side only)
+  const [captchaText, setCaptchaText] = useState<string>(''); // Le texte utilisé pour générer le captcha
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Initialiser EmailJS et OpenCaptcha au chargement du composant
@@ -30,14 +30,8 @@ const Contact = () => {
     const publicKey = 'Golcv37AOhZNxZiCH';
     
     try {
-      // Utiliser la méthode d'initialisation la plus récente pour EmailJS
-      emailjs.init({
-        publicKey: publicKey,
-        blockHeadless: false, // Permettre les tests en mode headless
-        limitRate: {
-          throttle: 3000 // Limitation d'envoi pour éviter les erreurs de rate-limit
-        }
-      });
+      // Initialisation d'EmailJS avec la méthode standard
+      emailjs.init(publicKey);
       
       // Générer un nouveau CAPTCHA dès le chargement
       generateCaptcha();
@@ -176,42 +170,30 @@ const Contact = () => {
       if (!serviceId || !templateId || !autoReplyTemplateId || !publicKey) {
         throw new Error('Configuration EmailJS incomplète. Veuillez vérifier les IDs de service et templates.');
       }
+      
+      console.log('Tentative d\'envoi avec EmailJS', { serviceId, templateId, autoReplyTemplateId });
 
-      // Préparation des données pour le template
+      // Préparation des données pour le template de notification à l'entreprise
       const templateParams = {
         from_name: formData.name,
         from_email: formData.email,
+        email: formData.email,     // Alternative
+        name: formData.name,       // Alternative 
+        message: formData.message,
         subject: formData.subject || 'Demande de contact Zazaq',
-        message: formData.message,
+        to_email: 'contact@zazaq.fr',  // Ajout explicite du destinataire
+        to_name: 'Zazaq - Service Client',
         reply_to: formData.email, // Important pour pouvoir répondre
-      };
-      
-      // Préparation des données pour l'auto-réponse
-      const autoReplyParams = {
-        user_name: formData.name,
-        user_email: formData.email,
-        to_name: formData.name,
-        to_email: formData.email, 
-        from_name: 'Zazaq',
-        from_email: 'contact@zazaq.fr',
-        subject: `Re: ${formData.subject || 'Votre demande de contact Zazaq'}`,
-        message: formData.message,
-        reply_to: 'contact@zazaq.fr',
-        // Ajout d'autres champs possibles pour assurer la compatibilité
-        email: formData.email,
-        name: formData.name
+        date: new Date().toLocaleString('fr-FR') // Date pour le template
       };
 
       // Tests séparés pour identifier le problème
       try {
-        // 1. Email vers l'entreprise
+        // 1. Email vers l'entreprise - méthode simplifiée
         const responseEntreprise = await emailjs.send(
           serviceId, 
           templateId, 
-          templateParams, 
-          {
-            publicKey: publicKey
-          }
+          templateParams
         );
         
         // Si on arrive ici, le premier email a réussi
@@ -228,95 +210,30 @@ const Contact = () => {
         
         // On essaie maintenant l'auto-réponse mais on ne bloque pas le processus s'il échoue
         try {
-          
-          // Pour l'auto-réponse avec un formatage anti-spam amélioré
+          // Structure exactement adaptée au template auto-réponse avec tous les champs potentiels
           const autoReplyData = {
-            // Format standard EmailJS
-            to_email: formData.email,
-            from_email: 'contact@zazaq.fr',
-            to_name: formData.name,
-            from_name: 'Zazaq - Service Client',
-            message: `Bonjour ${formData.name},
-
-Nous vous confirmons la réception de votre demande concernant "${formData.subject || 'votre projet'}".
-
-Notre équipe est déjà au travail pour étudier votre demande et vous répondra dans un délai maximum de 24 heures ouvrées.
-
-Si vous avez besoin d'informations complémentaires dans l'intervalle, n'hésitez pas à nous contacter directement à contact@zazaq.fr
-
-Cordialement,
-
-L'équipe Zazaq
-https://zazaq.fr
---
-Zazaq - Votre vision, en 360°
-contact@zazaq.fr
-Ceci est un message automatique, merci de ne pas y répondre directement.
-`,
-            subject: `Reçu: Votre demande de ${formData.subject || 'contact'} a bien été enregistrée`,
-            reply_to: 'contact@zazaq.fr',
-            company_name: 'Zazaq',
-            company_address: 'France',
-            company_website: 'https://zazaq.fr',
-            company_legal: 'Zazaq - Tous droits réservés',
-            
-            // Formats alternatifs pour différentes configurations de template
-            email: formData.email,
-            name: formData.name,
-            recipient: formData.email,
-            recipient_name: formData.name,
-            user_email: formData.email,
-            user_name: formData.name,
-            client_email: formData.email,
-            client_name: formData.name,
-            
-            // Informations pour HTML email avec logo en WebP pour meilleure performance
-            logoUrl: 'https://zazaq.fr/assets/logo1.webp', // Utilisation du format WebP optimisé
-            backgroundColor: '#ffffff',
-            textColor: '#333333',
-            accentColor: '#2563eb'
+            from_name: formData.name,  // Le template utilise {{from_name}}
+            to_email: formData.email,  // Adresse email du destinataire (obligatoire)
+            to_name: formData.name,    // Nom du destinataire
+            email: formData.email,     // Alternative pour l'email
+            name: formData.name,       // Alternative pour le nom
+            message: formData.message, // Le message original
+            subject: formData.subject || 'Votre demande',  // Le sujet original
+            reply_to: 'contact@zazaq.fr'  // Pour que l'utilisateur puisse répondre
           };
           
+          console.log('Données auto-réponse:', autoReplyData);
+          
+          // Envoi de l'email de confirmation avec méthode simplifiée
           const responseAutoReply = await emailjs.send(
             serviceId, 
             autoReplyTemplateId, 
-            autoReplyData, 
-            {
-              publicKey: publicKey
-            }
+            autoReplyData
           );
         } catch (autoReplyError: any) {
-          // On ne fait pas échouer le processus entier
-          
-          // Essayons une dernière tentative avec une configuration différente
-          try {
-            
-            // Version optimisée pour éviter les spams
-            const minimalParams = {
-              to: formData.email,
-              from_name: 'Zazaq Service Client',
-              subject: 'Confirmation de votre demande | Zazaq',
-              message: `Bonjour ${formData.name},
-
-Nous confirmons la bonne réception de votre demande. 
-Référence: ZQ-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}
-
-Cordialement,
-L'équipe Zazaq
-contact@zazaq.fr | https://zazaq.fr`,
-              logoUrl: 'https://zazaq.fr/assets/logo1.webp' // Ajout du logo WebP pour cette version aussi
-            };
-            
-            // Essayons un service général d'EmailJS
-            await emailjs.send(
-              serviceId, 
-              autoReplyTemplateId,
-              minimalParams,
-              publicKey
-            );
-          } catch (finalError) {
-            // Ignore l'erreur silencieusement
-          }
+          // On ne fait pas échouer le processus entier car l'email principal est déjà envoyé
+          console.log('Erreur auto-réponse:', autoReplyError);
+          // Pas besoin de faire une deuxième tentative qui risque d'échouer aussi
         }
         
         // On sort avec succès car le premier email a été envoyé
@@ -333,6 +250,10 @@ contact@zazaq.fr | https://zazaq.fr`,
     } catch (error: any) {
       // Récupérer des détails d'erreur plus précis
       let errorMessage = 'Erreur inconnue';
+      
+      // Log complet de l'erreur pour le débogage
+      console.error('EmailJS error details:', error);
+      
       if (error.text) {
         errorMessage = error.text;
       } else if (error.message) {
@@ -342,6 +263,11 @@ contact@zazaq.fr | https://zazaq.fr`,
       } else if (error.status) {
         // Erreurs avec code HTTP
         errorMessage = `Erreur ${error.status}: ${error.text || 'Problème de serveur'}`;
+      }
+      
+      // Pour les erreurs 422 spécifiquement, ajouter plus de détails
+      if (error.status === 422) {
+        errorMessage = "Le format des données envoyées n'est pas accepté par le service d'email. Veuillez vérifier les champs du formulaire.";
       }
       
       setEmailJSError(errorMessage);
