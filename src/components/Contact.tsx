@@ -149,6 +149,7 @@ const Contact = () => {
                       onChange={handleInputChange}
                       className="transition-smooth focus:shadow-glow"
                       placeholder="Votre nom"
+                      autoComplete="name"
                     />
                   </div>
                   <div className="space-y-1">
@@ -162,6 +163,7 @@ const Contact = () => {
                       onChange={handleInputChange}
                       className="transition-smooth focus:shadow-glow"
                       placeholder="votre@email.fr"
+                      autoComplete="email"
                     />
                   </div>
                 </div>
@@ -176,6 +178,7 @@ const Contact = () => {
                     onChange={handleInputChange}
                     className="transition-smooth focus:shadow-glow"
                     placeholder="Visite virtuelle 360°, Type de projet, Autres services..."
+                    autoComplete="subject"
                   />
                 </div>
 
@@ -189,6 +192,7 @@ const Contact = () => {
                     onChange={handleInputChange}
                     className="min-h-[80px] transition-smooth focus:shadow-glow"
                     placeholder="Décrivez votre projet, vos besoins, la taille de l'espace..."
+                    autoComplete="off"
                   />
                 </div>
 
