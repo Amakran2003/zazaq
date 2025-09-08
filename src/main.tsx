@@ -1,5 +1,5 @@
 import { createRoot } from "react-dom/client";
-import Construction from "./pages/Construction";
+import App from "./App";
 import "./index.css";
 
 // Vérifier si on vient d'une redirection de la page 404.html
@@ -11,4 +11,4 @@ if (redirectPath) {
   window.history.replaceState(null, '', redirectPath);
 }
 
-createRoot(document.getElementById("root")!).render(<Construction />);
+createRoot(document.getElementById("root")!).render(<App />);
