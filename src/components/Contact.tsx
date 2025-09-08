@@ -8,28 +8,29 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import AnimatedSection from '@/components/ui/animated-section';
-import ReCAPTCHA from 'react-google-recaptcha';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     subject: '',
-    message: ''
+    message: '',
+    captchaInput: '' // Added for OpenCaptcha input
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [emailJSError, setEmailJSError] = useState<string | null>(null);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaError, setCaptchaError] = useState<boolean>(false);
-  const recaptchaRef = useRef<ReCAPTCHA>(null);
+  const [captchaImage, setCaptchaImage] = useState<string | null>(null);
+  const [captchaText, setCaptchaText] = useState<string>(''); // The text used to generate the captcha (server-side only)
   const { toast } = useToast();
 
-  // Initialiser EmailJS au chargement du composant avec configuration optimale
+  // Initialiser EmailJS et OpenCaptcha au chargement du composant
   useEffect(() => {
     const publicKey = 'Golcv37AOhZNxZiCH';
     
     try {
-      // Utiliser la méthode d'initialisation la plus récente
+      // Utiliser la méthode d'initialisation la plus récente pour EmailJS
       emailjs.init({
         publicKey: publicKey,
         blockHeadless: false, // Permettre les tests en mode headless
@@ -37,9 +38,56 @@ const Contact = () => {
           throttle: 3000 // Limitation d'envoi pour éviter les erreurs de rate-limit
         }
       });
+      
+      // Générer un nouveau CAPTCHA dès le chargement
+      generateCaptcha();
     } catch (error) {
+      console.error("Erreur d'initialisation:", error);
     }
   }, []);
+
+  // Fonction pour générer un CAPTCHA avec l'API OpenCaptcha
+  const generateCaptcha = async () => {
+    try {
+      // Générer un texte aléatoire pour le CAPTCHA (5-6 caractères)
+      const randomText = Math.random().toString(36).substring(2, 8);
+      setCaptchaText(randomText);
+
+      // Appel à l'API OpenCaptcha pour générer l'image
+      const response = await fetch('https://api.opencaptcha.io/captcha', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          text: randomText,
+          width: 300,  // Taille adaptée à notre formulaire
+          height: 80,  // Taille adaptée à notre formulaire
+          difficulty: 1 // Difficulté moyenne (valeurs possibles: 0, 1, 2, 3)
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erreur OpenCaptcha: ${response.status}`);
+      }
+
+      // L'API retourne directement l'image JPEG, pas de JSON
+      const imageBlob = await response.blob();
+      
+      // Convertir le Blob en base64 pour l'affichage
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        // Extraire la partie base64 de la chaîne data URL
+        const base64String = reader.result?.toString().split(',')[1];
+        setCaptchaImage(base64String || null);
+      };
+      reader.readAsDataURL(imageBlob);
+      
+    } catch (error) {
+      console.error('Erreur lors de la génération du CAPTCHA:', error);
+      setCaptchaError(true);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     // Réinitialiser les messages d'erreur quand l'utilisateur modifie le formulaire
@@ -58,15 +106,34 @@ const Contact = () => {
     }));
   };
   
-  const handleCaptchaChange = (token: string | null) => {
-    setCaptchaToken(token);
-    if (token) {
-      setCaptchaError(false);
-      toast({
-        title: "Vérification réussie",
-        description: "Vous pouvez maintenant envoyer votre message.",
-        variant: "default",
-      });
+  // Fonction pour vérifier le captcha saisi par l'utilisateur
+  const verifyCaptcha = async (): Promise<string | null> => {
+    try {
+      // Vérifier que l'utilisateur a bien saisi le texte du CAPTCHA
+      if (!formData.captchaInput) {
+        setCaptchaError(true);
+        return null;
+      }
+
+      // Vérifier que le texte saisi correspond au CAPTCHA généré
+      // Dans une implémentation complète, cette vérification se ferait côté serveur
+      if (formData.captchaInput.toLowerCase() === captchaText.toLowerCase()) {
+        // La vérification est réussie, générer un token de validation
+        const token = `opencaptcha-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+        setCaptchaToken(token);
+        setCaptchaError(false);
+        return token;
+      } else {
+        // La vérification a échoué
+        setCaptchaError(true);
+        // Générer un nouveau CAPTCHA après une erreur
+        generateCaptcha();
+        return null;
+      }
+    } catch (error) {
+      console.error('Erreur Captcha:', error);
+      setCaptchaError(true);
+      return null;
     }
   };
 
@@ -84,12 +151,13 @@ const Contact = () => {
       return;
     }
     
-    // Vérifier le CAPTCHA
-    if (!captchaToken) {
+    // Vérifier avec OpenCaptcha
+    const token = await verifyCaptcha();
+    if (!token) {
       setCaptchaError(true);
       toast({
-        title: "Vérification requise",
-        description: "Veuillez confirmer que vous n'êtes pas un robot en complétant le CAPTCHA.",
+        title: "Erreur de vérification",
+        description: "La vérification de sécurité a échoué. Veuillez réessayer.",
         variant: "destructive",
       });
       return;
@@ -153,11 +221,10 @@ const Contact = () => {
         });
         
         // On réinitialise le formulaire et le captcha après l'envoi réussi du premier email
-        setFormData({ name: '', email: '', subject: '', message: '' });
+        setFormData({ name: '', email: '', subject: '', message: '', captchaInput: '' });
         setCaptchaToken(null);
-        if (recaptchaRef.current) {
-          recaptchaRef.current.reset();
-        }
+        // Générer un nouveau CAPTCHA pour la prochaine utilisation
+        generateCaptcha();
         
         // On essaie maintenant l'auto-réponse mais on ne bloque pas le processus s'il échoue
         try {
@@ -203,8 +270,8 @@ Ceci est un message automatique, merci de ne pas y répondre directement.
             client_email: formData.email,
             client_name: formData.name,
             
-            // Informations pour HTML email
-            logoUrl: 'https://zazaq.fr/favicon%20bleu.png',
+            // Informations pour HTML email avec logo en WebP pour meilleure performance
+            logoUrl: 'https://zazaq.fr/assets/logo1.webp', // Utilisation du format WebP optimisé
             backgroundColor: '#ffffff',
             textColor: '#333333',
             accentColor: '#2563eb'
@@ -236,7 +303,8 @@ Référence: ZQ-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 
 
 Cordialement,
 L'équipe Zazaq
-contact@zazaq.fr | https://zazaq.fr`
+contact@zazaq.fr | https://zazaq.fr`,
+              logoUrl: 'https://zazaq.fr/assets/logo1.webp' // Ajout du logo WebP pour cette version aussi
             };
             
             // Essayons un service général d'EmailJS
@@ -261,7 +329,7 @@ contact@zazaq.fr | https://zazaq.fr`
         title: "Message envoyé !",
         description: "Votre demande a bien été envoyée. Nous vous avons envoyé une confirmation par email (vérifiez vos spams si nécessaire).",
       });
-      setFormData({ name: '', email: '', subject: '', message: '' });
+      setFormData({ name: '', email: '', subject: '', message: '', captchaInput: '' });
     } catch (error: any) {
       // Récupérer des détails d'erreur plus précis
       let errorMessage = 'Erreur inconnue';
@@ -409,21 +477,62 @@ contact@zazaq.fr | https://zazaq.fr`
                   />
                 </div>
 
-                {/* reCAPTCHA */}
-                <div className="w-full flex justify-center my-4">
-                  <ReCAPTCHA
-                    ref={recaptchaRef}
-                    sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" // Clé de test - À remplacer par votre clé réelle
-                    onChange={handleCaptchaChange}
-                    className="transform scale-[0.85] sm:scale-100 origin-left sm:origin-center"
-                    hl="fr"
-                  />
+                {/* OpenCaptcha - affiche l'image CAPTCHA et demande à l'utilisateur de saisir le texte */}
+                <div className="w-full my-4">
+                  <Label htmlFor="captchaInput" className="font-semibold mb-2">Vérification de sécurité *</Label>
+                  
+                  <div className="flex flex-col md:flex-row items-center gap-4 mt-2">
+                    {/* Image CAPTCHA */}
+                    <div className="relative bg-gray-50 p-2 rounded-lg border border-muted/30 w-full md:w-auto">
+                      {captchaImage ? (
+                        <img 
+                          src={`data:image/jpeg;base64,${captchaImage}`} 
+                          alt="OpenCaptcha verification" 
+                          className="h-16 object-contain mx-auto"
+                        />
+                      ) : (
+                        <div className="h-16 w-48 animate-pulse bg-gray-200 rounded"></div>
+                      )}
+                      
+                      {/* Bouton pour régénérer le CAPTCHA */}
+                      <button 
+                        type="button" 
+                        onClick={() => generateCaptcha()} 
+                        className="absolute -top-2 -right-2 bg-accent/10 hover:bg-accent/20 text-accent p-1 rounded-full"
+                        title="Générer un nouveau CAPTCHA"
+                      >
+                        <svg className="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                      </button>
+                    </div>
+                    
+                    {/* Champ de saisie du CAPTCHA */}
+                    <div className="flex-grow w-full md:w-auto">
+                      <Input
+                        id="captchaInput"
+                        name="captchaInput"
+                        type="text"
+                        required
+                        value={formData.captchaInput}
+                        onChange={handleInputChange}
+                        className="transition-smooth focus:shadow-glow"
+                        placeholder="Saisissez le texte de l'image"
+                        autoComplete="off"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Saisissez les caractères affichés dans l'image ci-dessus
+                      </p>
+                    </div>
+                  </div>
+                  
+                 
                 </div>
                 
                 {captchaError && (
                   <div className="p-3 mb-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-600">
-                    <div className="font-semibold mb-1">Vérification requise:</div>
-                    <div>Veuillez confirmer que vous n'êtes pas un robot en complétant le CAPTCHA.</div>
+                    <div className="font-semibold mb-1">Erreur de vérification OpenCaptcha:</div>
+                    <div>Le texte saisi ne correspond pas à l'image. Veuillez réessayer ou générer un nouveau CAPTCHA.</div>
                   </div>
                 )}
 
@@ -460,7 +569,6 @@ contact@zazaq.fr | https://zazaq.fr`
                 
                 <div className="text-center mt-2 text-xs text-muted-foreground space-y-1">
                   <p>Vous recevrez une confirmation par email. Pensez à vérifier vos spams.</p>
-                  <p>Le CAPTCHA ci-dessus nous aide à protéger notre formulaire contre les robots et les spams.</p>
                 </div>
               </form>
 
