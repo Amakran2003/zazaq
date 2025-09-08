@@ -31,6 +31,8 @@ jobs:
 
       - name: Build Project
         run: bun run build
+        env:
+          VITE_EMAILJS_PUBLIC_KEY: ${{ secrets.VITE_EMAILJS_PUBLIC_KEY }}
 
       - name: Copy additional files to dist
         run: |
