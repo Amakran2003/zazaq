@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import emailjs from '@emailjs/browser';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import AnimatedSection from '@/components/ui/animated-section';
+import ReCAPTCHA from 'react-google-recaptcha';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -18,23 +19,25 @@ const Contact = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [emailJSError, setEmailJSError] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaError, setCaptchaError] = useState<boolean>(false);
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
   const { toast } = useToast();
 
-  // Initialiser EmailJS au chargement du composant
+  // Initialiser EmailJS au chargement du composant avec configuration optimale
   useEffect(() => {
     const publicKey = 'Golcv37AOhZNxZiCH';
+    
     try {
       // Utiliser la méthode d'initialisation la plus récente
       emailjs.init({
         publicKey: publicKey,
         blockHeadless: false, // Permettre les tests en mode headless
         limitRate: {
-          throttle: 2000 // Limitation d'envoi pour éviter les erreurs de rate-limit
+          throttle: 3000 // Limitation d'envoi pour éviter les erreurs de rate-limit
         }
       });
-      console.log('EmailJS initialisé avec succès');
     } catch (error) {
-      console.error('Erreur lors de l\'initialisation d\'EmailJS:', error);
     }
   }, []);
 
@@ -44,11 +47,27 @@ const Contact = () => {
       setEmailJSError(null);
     }
     
+    if (captchaError) {
+      setCaptchaError(false);
+    }
+    
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+  };
+  
+  const handleCaptchaChange = (token: string | null) => {
+    setCaptchaToken(token);
+    if (token) {
+      setCaptchaError(false);
+      toast({
+        title: "Vérification réussie",
+        description: "Vous pouvez maintenant envoyer votre message.",
+        variant: "default",
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -60,6 +79,17 @@ const Contact = () => {
       toast({
         title: "Validation",
         description: "Veuillez entrer une adresse e-mail valide.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Vérifier le CAPTCHA
+    if (!captchaToken) {
+      setCaptchaError(true);
+      toast({
+        title: "Vérification requise",
+        description: "Veuillez confirmer que vous n'êtes pas un robot en complétant le CAPTCHA.",
         variant: "destructive",
       });
       return;
@@ -106,8 +136,6 @@ const Contact = () => {
 
       // Tests séparés pour identifier le problème
       try {
-        console.log('Envoi email à l\'entreprise...', { serviceId, templateId, templateParams });
-        
         // 1. Email vers l'entreprise
         const responseEntreprise = await emailjs.send(
           serviceId, 
@@ -117,31 +145,53 @@ const Contact = () => {
             publicKey: publicKey
           }
         );
-        console.log('Réponse de l\'envoi vers l\'entreprise:', responseEntreprise);
         
         // Si on arrive ici, le premier email a réussi
         toast({
           title: "Message envoyé",
-          description: "Votre demande a bien été transmise à notre équipe.",
+          description: "Votre demande a bien été transmise à notre équipe. Vous recevrez une confirmation par email (pensez à vérifier vos spams).",
         });
         
-        // On réinitialise le formulaire après l'envoi réussi du premier email
+        // On réinitialise le formulaire et le captcha après l'envoi réussi du premier email
         setFormData({ name: '', email: '', subject: '', message: '' });
+        setCaptchaToken(null);
+        if (recaptchaRef.current) {
+          recaptchaRef.current.reset();
+        }
         
         // On essaie maintenant l'auto-réponse mais on ne bloque pas le processus s'il échoue
         try {
-          console.log('Tentative d\'envoi de l\'auto-réponse...', { serviceId, autoReplyTemplateId });
           
-          // Pour l'auto-réponse, essayons tous les formats possibles de variables
+          // Pour l'auto-réponse avec un formatage anti-spam amélioré
           const autoReplyData = {
             // Format standard EmailJS
             to_email: formData.email,
             from_email: 'contact@zazaq.fr',
             to_name: formData.name,
-            from_name: 'Zazaq',
-            message: `Bonjour ${formData.name},\n\nNous avons bien reçu votre demande concernant "${formData.subject || 'votre projet'}". Notre équipe l'examine et vous répondra dans les plus brefs délais.\n\nCordialement,\nL'équipe Zazaq`,
-            subject: 'Confirmation de votre demande chez Zazaq',
+            from_name: 'Zazaq - Service Client',
+            message: `Bonjour ${formData.name},
+
+Nous vous confirmons la réception de votre demande concernant "${formData.subject || 'votre projet'}".
+
+Notre équipe est déjà au travail pour étudier votre demande et vous répondra dans un délai maximum de 24 heures ouvrées.
+
+Si vous avez besoin d'informations complémentaires dans l'intervalle, n'hésitez pas à nous contacter directement à contact@zazaq.fr
+
+Cordialement,
+
+L'équipe Zazaq
+https://zazaq.fr
+--
+Zazaq - Votre vision, en 360°
+contact@zazaq.fr
+Ceci est un message automatique, merci de ne pas y répondre directement.
+`,
+            subject: `Reçu: Votre demande de ${formData.subject || 'contact'} a bien été enregistrée`,
             reply_to: 'contact@zazaq.fr',
+            company_name: 'Zazaq',
+            company_address: 'France',
+            company_website: 'https://zazaq.fr',
+            company_legal: 'Zazaq - Tous droits réservés',
             
             // Formats alternatifs pour différentes configurations de template
             email: formData.email,
@@ -151,10 +201,14 @@ const Contact = () => {
             user_email: formData.email,
             user_name: formData.name,
             client_email: formData.email,
-            client_name: formData.name
+            client_name: formData.name,
+            
+            // Informations pour HTML email
+            logoUrl: 'https://zazaq.fr/favicon%20bleu.png',
+            backgroundColor: '#ffffff',
+            textColor: '#333333',
+            accentColor: '#2563eb'
           };
-          
-          console.log('Paramètres de l\'auto-réponse:', autoReplyData);
           
           const responseAutoReply = await emailjs.send(
             serviceId, 
@@ -164,21 +218,25 @@ const Contact = () => {
               publicKey: publicKey
             }
           );
-          console.log('Auto-réponse envoyée avec succès:', responseAutoReply);
         } catch (autoReplyError: any) {
-          // On log l'erreur mais on ne fait pas échouer le processus entier
-          console.error('Erreur lors de l\'envoi de l\'auto-réponse:', autoReplyError);
+          // On ne fait pas échouer le processus entier
           
           // Essayons une dernière tentative avec une configuration différente
           try {
-            console.log('Dernière tentative d\'auto-réponse avec configuration alternative...');
             
-            // Version simplifiée au maximum
+            // Version optimisée pour éviter les spams
             const minimalParams = {
               to: formData.email,
-              from_name: 'Zazaq',
-              subject: 'Confirmation de réception',
-              message: 'Merci pour votre message. Nous vous répondrons prochainement.'
+              from_name: 'Zazaq Service Client',
+              subject: 'Confirmation de votre demande | Zazaq',
+              message: `Bonjour ${formData.name},
+
+Nous confirmons la bonne réception de votre demande. 
+Référence: ZQ-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}
+
+Cordialement,
+L'équipe Zazaq
+contact@zazaq.fr | https://zazaq.fr`
             };
             
             // Essayons un service général d'EmailJS
@@ -188,9 +246,8 @@ const Contact = () => {
               minimalParams,
               publicKey
             );
-            console.log('Auto-réponse de secours envoyée avec succès');
           } catch (finalError) {
-            console.error('Échec définitif de l\'auto-réponse:', finalError);
+            // Ignore l'erreur silencieusement
           }
         }
         
@@ -198,19 +255,14 @@ const Contact = () => {
         return;
         
       } catch (innerError: any) {
-        console.error('Erreur pendant l\'envoi à l\'entreprise:', innerError);
         throw innerError; // On remonte l'erreur au bloc catch principal
       }
-
-      console.log('Emails envoyés avec succès');
       toast({
         title: "Message envoyé !",
-        description: "Votre demande a bien été envoyée. Nous vous répondrons rapidement.",
+        description: "Votre demande a bien été envoyée. Nous vous avons envoyé une confirmation par email (vérifiez vos spams si nécessaire).",
       });
       setFormData({ name: '', email: '', subject: '', message: '' });
     } catch (error: any) {
-      console.error('Erreur EmailJS:', error);
-      
       // Récupérer des détails d'erreur plus précis
       let errorMessage = 'Erreur inconnue';
       if (error.text) {
@@ -223,13 +275,6 @@ const Contact = () => {
         // Erreurs avec code HTTP
         errorMessage = `Erreur ${error.status}: ${error.text || 'Problème de serveur'}`;
       }
-      
-      // Logs détaillés pour le débogage
-      console.error('Détails de l\'erreur:', {
-        message: errorMessage,
-        formData: formData,
-        errorObject: error
-      });
       
       setEmailJSError(errorMessage);
       toast({
@@ -364,6 +409,24 @@ const Contact = () => {
                   />
                 </div>
 
+                {/* reCAPTCHA */}
+                <div className="w-full flex justify-center my-4">
+                  <ReCAPTCHA
+                    ref={recaptchaRef}
+                    sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" // Clé de test - À remplacer par votre clé réelle
+                    onChange={handleCaptchaChange}
+                    className="transform scale-[0.85] sm:scale-100 origin-left sm:origin-center"
+                    hl="fr"
+                  />
+                </div>
+                
+                {captchaError && (
+                  <div className="p-3 mb-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-600">
+                    <div className="font-semibold mb-1">Vérification requise:</div>
+                    <div>Veuillez confirmer que vous n'êtes pas un robot en complétant le CAPTCHA.</div>
+                  </div>
+                )}
+
                 {emailJSError && (
                   <div className="p-3 mb-3 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive">
                     <div className="font-semibold mb-1">Erreur lors de l'envoi:</div>
@@ -394,6 +457,11 @@ const Contact = () => {
                     </div>
                   )}
                 </Button>
+                
+                <div className="text-center mt-2 text-xs text-muted-foreground space-y-1">
+                  <p>Vous recevrez une confirmation par email. Pensez à vérifier vos spams.</p>
+                  <p>Le CAPTCHA ci-dessus nous aide à protéger notre formulaire contre les robots et les spams.</p>
+                </div>
               </form>
 
               <div className="mt-4 p-4 bg-gradient-to-br from-accent/5 to-primary/5 rounded-xl border border-accent/10 shadow-soft">
