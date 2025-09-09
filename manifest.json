@@ -1,23 +1,17 @@
 {
-  "name": "Zazaq - Votre vision, en 360°",
+  "name": "Zazaq | Visite Virtuelle 360° | Expert VR & Communication Digitale",
   "short_name": "Zazaq",
-  "description": "Spécialiste en visites virtuelles 360° et développement web sur mesure",
+  "description": "Zazaq transforme votre vision en expérience 360°. Spécialiste certifié en visites virtuelles immersives, développement web sur mesure et communication digitale. ✓ Qualité professionnelle ✓ Délais respectés ✓ Satisfaction garantie",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#2563eb",
   "theme_color": "#2563eb",
   "icons": [
     {
-      "src": "/favicon noir.png",
+      "src": "/favicon.jpg",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/favicon blanc.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
+      "type": "image/jpeg",
+      "purpose": "any maskable"
     }
   ],
   "orientation": "portrait",
