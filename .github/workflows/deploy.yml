@@ -34,15 +34,13 @@ jobs:
 
       - name: Copy additional files to dist
         run: |
-          cp -r public/CNAME dist/
-          cp -r public/.nojekyll dist/
+          cp -r public/CNAME dist/ || echo "CNAME not found"
+          cp -r public/.nojekyll dist/ || echo ".nojekyll not found"
           cp -r public/404.html dist/
-          cp -r public/favicon*.png dist/
-          cp -r public/robots.txt dist/
-          cp -r public/sitemap.xml dist/
-          cp -r public/favicon-switcher.js dist/
-          cp -r public/structured-data.json dist/
-          cp -r public/manifest.json dist/ || echo "manifest.json not found"
+          cp -r public/favicon.jpg dist/
+          cp -r public/robots.txt dist/ || echo "robots.txt not found"
+          cp -r public/sitemap.xml dist/ || echo "sitemap.xml not found"
+          cp -r public/manifest.json dist/
           cp -r public/.htaccess dist/ || echo ".htaccess not found"
 
       - name: Deploy to GitHub Pages
