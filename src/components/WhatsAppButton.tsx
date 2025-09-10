@@ -24,7 +24,7 @@ const WhatsAppButton = () => {
   }, [pulseAnimation]);
 
   return (
-    <div className="fixed bottom-20 right-6 z-50">
+    <div className="fixed bottom-10 right-6 z-50">
       {/* Effet de pulsation avec taille augmentée */}
       <AnimatePresence>
         <motion.div
