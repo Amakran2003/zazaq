@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import SplashScreen from "./components/SplashScreen";
+import WhatsAppButton from "./components/WhatsAppButton";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +48,9 @@ const App = () => {
           <Toaster />
           <Sonner />
           {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
+          
+          {/* Bouton WhatsApp flottant */}
+          {appReady && <WhatsAppButton />}
           
           <AnimatePresence mode="wait">
             {appReady && (
