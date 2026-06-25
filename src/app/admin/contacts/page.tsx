@@ -13,10 +13,16 @@ export default async function ContactsPage() {
     <>
       <div className="flex items-center justify-between mb-8">
         <h1 className="font-[var(--font-display)] text-2xl font-bold text-slate-900">Contacts</h1>
-        <Link href="/admin/contacts?new=true" className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 3v10M3 8h10" /></svg>
-          Ajouter
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/admin/contacts/import" className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 10v1a3 3 0 003 3h2a3 3 0 003-3v-1M8 3v7M5 6l3-3 3 3" /></svg>
+            Importer Excel
+          </Link>
+          <Link href="/admin/contacts?new=true" className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 3v10M3 8h10" /></svg>
+            Ajouter
+          </Link>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
@@ -34,7 +40,11 @@ export default async function ContactsPage() {
             {contacts && contacts.length > 0 ? (
               contacts.map((c) => (
                 <tr key={c.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-4 py-3 font-medium text-slate-900">{c.first_name} {c.last_name}</td>
+                  <td className="px-4 py-3">
+                    <Link href={`/admin/contacts/${c.id}`} className="font-medium text-slate-900 hover:text-accent-cyan transition-colors">
+                      {c.first_name} {c.last_name}
+                    </Link>
+                  </td>
                   <td className="px-4 py-3 text-slate-600">{c.email}</td>
                   <td className="px-4 py-3">
                     <span className="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-accent-cyan/10 text-accent-cyan">{c.status}</span>
