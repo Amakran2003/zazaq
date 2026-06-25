@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function GET(request: NextRequest) {
   const slug = request.nextUrl.searchParams.get("slug");
   const event = request.nextUrl.searchParams.get("event") || "click";
 
   if (!slug) return NextResponse.json({ error: "Missing slug" }, { status: 400 });
+
+  const supabase = createAdminClient();
 
   const { data: link } = await supabase
     .from("tracking_links")

@@ -1,16 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
+  const supabase = createAdminClient();
 
   const { data: link } = await supabase
     .from("tracking_links")
@@ -22,7 +18,6 @@ export async function GET(
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // Record click
   await supabase.from("link_events").insert({
     tracking_link_id: link.id,
     event_type: "click",
@@ -32,7 +27,6 @@ export async function GET(
 
   await supabase.rpc("increment_link_clicks", { link_id: link.id });
 
-  // Redirect with ref cookie
   const targetUrl = new URL(link.target_url || "/", request.url);
   targetUrl.searchParams.set("ref", slug);
   const response = NextResponse.redirect(targetUrl);
