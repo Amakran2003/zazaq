@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" fill="none">
+  <rect width="1200" height="630" fill="#ffffff"/>
+  <rect x="60" y="60" width="1080" height="510" rx="24" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="600" y="280" font-family="system-ui, sans-serif" font-weight="800" font-size="72" fill="#0f172a" text-anchor="middle">Zazaq</text>
+  <text x="600" y="360" font-family="system-ui, sans-serif" font-weight="500" font-size="28" fill="#64748b" text-anchor="middle">Récupérez du temps en automatisant vos tâches</text>
+  <rect x="440" y="400" width="320" height="52" rx="26" fill="#0f172a"/>
+  <text x="600" y="432" font-family="system-ui, sans-serif" font-weight="600" font-size="16" fill="#ffffff" text-anchor="middle">Diagnostic gratuit  30 min</text>
+</svg>
