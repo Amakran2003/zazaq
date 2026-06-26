@@ -80,7 +80,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="bg-white text-slate-900 antialiased overflow-x-hidden min-h-dvh">
+      <body className="bg-white text-slate-900 antialiased overflow-x-hidden min-h-dvh" style={{ fontFamily: "var(--font-body)" }}>
         {children}
         <Analytics />
       </body>
