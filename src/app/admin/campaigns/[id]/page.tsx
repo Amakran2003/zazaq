@@ -34,6 +34,7 @@ export default function CampaignDetailPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [transferTarget, setTransferTarget] = useState("");
   const [sending, setSending] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [filter, setFilter] = useState<"all" | "sent" | "opened" | "clicked" | "no_open">("all");
 
   const load = async () => {
@@ -71,7 +72,6 @@ export default function CampaignDetailPage() {
   const handleTransfer = async () => {
     if (!transferTarget || selected.size === 0) return;
     const contactIds = Array.from(selected);
-
     for (const contactId of contactIds) {
       await supabase.from("campaign_contact_status").upsert({
         campaign_id: transferTarget,
@@ -79,8 +79,6 @@ export default function CampaignDetailPage() {
         current_step: 0,
         status: "pending",
       }, { onConflict: "campaign_id,contact_id" });
-
-      // Also add to target campaign's list
       const { data: targetCampaign } = await supabase.from("campaigns").select("list_id").eq("id", transferTarget).single();
       if (targetCampaign?.list_id) {
         await supabase.from("contact_list_members").upsert(
@@ -89,10 +87,55 @@ export default function CampaignDetailPage() {
         );
       }
     }
-
     setSelected(new Set());
     setTransferTarget("");
     alert(`${contactIds.length} contact(s) transféré(s)`);
+  };
+
+  // --- Sequence editor ---
+  const addStep = () => {
+    const newStep: Step = {
+      id: `new-${Date.now()}`,
+      step_order: steps.length,
+      template_id: "relance",
+      subject: TEMPLATES.relance.subject,
+      delay_days: 3,
+    };
+    setSteps([...steps, newStep]);
+  };
+
+  const removeStep = (idx: number) => {
+    if (steps.length <= 1) return;
+    setSteps(steps.filter((_, i) => i !== idx));
+  };
+
+  const updateStep = (idx: number, field: keyof Step, value: string | number) => {
+    setSteps(steps.map((s, i) => {
+      if (i !== idx) return s;
+      const updated = { ...s, [field]: value };
+      if (field === "template_id") {
+        updated.subject = TEMPLATES[value as TemplateId]?.subject || updated.subject;
+      }
+      return updated;
+    }));
+  };
+
+  const saveSequence = async () => {
+    setSaving(true);
+    // Delete old steps
+    await supabase.from("campaign_steps").delete().eq("campaign_id", id);
+    // Insert new steps
+    const stepsData = steps.map((s, i) => ({
+      campaign_id: id,
+      step_order: i,
+      template_id: s.template_id,
+      subject: s.subject,
+      html_content: TEMPLATES[s.template_id as TemplateId]?.html || "",
+      delay_days: s.delay_days,
+    }));
+    await supabase.from("campaign_steps").insert(stepsData);
+    setSaving(false);
+    load();
   };
 
   const toggleSelect = (contactId: string) => {
@@ -101,19 +144,16 @@ export default function CampaignDetailPage() {
     setSelected(next);
   };
 
-  const selectAll = () => {
-    if (selected.size === filteredContacts.length) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(filteredContacts.map((c) => c.contact_id)));
-    }
-  };
-
   const filteredContacts = contactStatuses.filter((cs) => {
     if (filter === "all") return true;
     if (filter === "no_open") return !cs.opened_at;
     return cs.status === filter;
   });
+
+  const selectAll = () => {
+    if (selected.size === filteredContacts.length) setSelected(new Set());
+    else setSelected(new Set(filteredContacts.map((c) => c.contact_id)));
+  };
 
   const stats = campaign?.stats || {};
 
@@ -143,10 +183,9 @@ export default function CampaignDetailPage() {
         ))}
       </div>
 
-      {/* Tab: Contacts */}
+      {/* ============ Tab: Contacts ============ */}
       {tab === "Contacts" && (
         <div className="space-y-4">
-          {/* Filters + actions */}
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex gap-1 bg-white rounded-lg border border-slate-200 p-1 text-xs">
               {([["all", "Tous"], ["sent", "Envoyé"], ["opened", "Ouvert"], ["clicked", "Cliqué"], ["no_open", "Pas ouvert"]] as const).map(([key, label]) => (
@@ -154,7 +193,6 @@ export default function CampaignDetailPage() {
               ))}
             </div>
             <span className="text-xs text-slate-400">{filteredContacts.length} contact(s)</span>
-
             {selected.size > 0 && (
               <div className="ml-auto flex items-center gap-2">
                 <span className="text-xs font-medium text-slate-600">{selected.size} sélectionné(s)</span>
@@ -167,7 +205,6 @@ export default function CampaignDetailPage() {
             )}
           </div>
 
-          {/* Table */}
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-slate-50 border-b border-slate-200">
@@ -202,7 +239,7 @@ export default function CampaignDetailPage() {
                     </td>
                   </tr>
                 )) : (
-                  <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">{campaign.status === "draft" ? "Envoyez la campagne pour voir les contacts ici." : "Aucun contact trouvé avec ce filtre."}</td></tr>
+                  <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">{campaign.status === "draft" ? "Envoyez la campagne pour voir les contacts ici." : "Aucun contact avec ce filtre."}</td></tr>
                 )}
               </tbody>
             </table>
@@ -210,46 +247,117 @@ export default function CampaignDetailPage() {
         </div>
       )}
 
-      {/* Tab: Emails */}
+      {/* ============ Tab: Emails (editable sequence) ============ */}
       {tab === "Emails" && (
         <div className="space-y-4">
-          {steps.map((step, i) => (
-            <div key={step.id} className="bg-white rounded-xl border border-slate-200 p-5">
-              <div className="flex items-center gap-3 mb-3">
-                <span className="px-2.5 py-0.5 text-xs font-bold text-slate-400 bg-slate-50 rounded">Email {i + 1}</span>
-                {i > 0 && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs text-amber-700 bg-amber-50 rounded-md">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
-                    +{step.delay_days}j après
-                  </span>
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-slate-900">Séquence ({steps.length} email{steps.length > 1 ? "s" : ""})</h2>
+            <div className="flex gap-2">
+              {campaign.status === "draft" && (
+                <button onClick={addStep} className="text-xs font-medium text-accent-cyan hover:underline">+ Ajouter un email</button>
+              )}
+              {campaign.status === "draft" && (
+                <button onClick={saveSequence} disabled={saving} className="px-4 py-1.5 text-xs font-medium bg-slate-900 text-white rounded-lg disabled:opacity-50">
+                  {saving ? "..." : "Sauvegarder"}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Visual workflow */}
+          <div className="relative">
+            {steps.map((step, idx) => (
+              <div key={step.id}>
+                {/* Delay connector */}
+                {idx > 0 && (
+                  <div className="flex items-center gap-3 py-3 pl-8">
+                    <div className="w-px h-6 bg-slate-200 absolute left-[22px]" />
+                    <div className="flex items-center gap-2 bg-amber-50 border border-amber-100 rounded-lg px-3 py-1.5">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-amber-500"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
+                      {campaign.status === "draft" ? (
+                        <>
+                          <span className="text-xs text-amber-700">Attendre</span>
+                          <input type="number" min={0} max={30} value={step.delay_days} onChange={(e) => updateStep(idx, "delay_days", Number(e.target.value))} className="w-12 px-1.5 py-0.5 text-xs border border-amber-200 rounded text-center bg-white" />
+                          <span className="text-xs text-amber-700">jours</span>
+                        </>
+                      ) : (
+                        <span className="text-xs text-amber-700">{step.delay_days} jour{step.delay_days > 1 ? "s" : ""} d&apos;attente</span>
+                      )}
+                    </div>
+                  </div>
                 )}
-                <span className="text-xs text-slate-500">{TEMPLATES[step.template_id as TemplateId]?.name || step.template_id}</span>
+
+                {/* Step card */}
+                <div className="bg-white rounded-xl border border-slate-200 p-5 relative ml-0">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white ${idx === 0 ? "bg-accent-cyan" : "bg-slate-400"}`}>
+                      {idx + 1}
+                    </div>
+                    <div className="flex-1">
+                      <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+                        {idx === 0 ? "Premier contact" : idx === 1 ? "Relance" : `Email ${idx + 1}`}
+                      </span>
+                    </div>
+                    {campaign.status === "draft" && steps.length > 1 && (
+                      <button onClick={() => removeStep(idx)} className="text-xs text-red-400 hover:text-red-600">Supprimer</button>
+                    )}
+                  </div>
+
+                  {campaign.status === "draft" ? (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-xs text-slate-500 mb-1 block">Template</label>
+                        <select value={step.template_id} onChange={(e) => updateStep(idx, "template_id", e.target.value)} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-cyan/30">
+                          {Object.entries(TEMPLATES).map(([tid, t]) => (
+                            <option key={tid} value={tid}>{t.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-500 mb-1 block">Sujet</label>
+                        <input value={step.subject} onChange={(e) => updateStep(idx, "subject", e.target.value)} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-cyan/30" />
+                      </div>
+                      {/* Preview */}
+                      <details className="group">
+                        <summary className="text-xs text-slate-400 cursor-pointer hover:text-slate-600">Aperçu email ▾</summary>
+                        <div className="mt-2 border border-slate-100 rounded-lg overflow-hidden">
+                          <iframe
+                            srcDoc={TEMPLATES[step.template_id as TemplateId]?.html
+                              .replaceAll("{{prenom}}", "Jean")
+                              .replaceAll("{{nom}}", "Dupont")
+                              .replaceAll("{{entreprise}}", "Cabinet XYZ")
+                              .replaceAll("{{lien_tracking}}", "#")
+                              .replaceAll("{{contenu}}", "")
+                              .replaceAll("{{pixel_url}}", "") || ""}
+                            className="w-full h-[350px] border-0"
+                            title={`Preview ${idx + 1}`}
+                          />
+                        </div>
+                      </details>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-sm text-slate-700 mb-1"><span className="text-slate-400">Template :</span> {TEMPLATES[step.template_id as TemplateId]?.name || step.template_id}</p>
+                      <p className="text-sm text-slate-700"><span className="text-slate-400">Sujet :</span> {step.subject}</p>
+                    </div>
+                  )}
+                </div>
               </div>
-              <p className="text-sm font-medium text-slate-900 mb-2">Sujet : {step.subject}</p>
-              <div className="border border-slate-100 rounded-lg overflow-hidden">
-                <iframe
-                  srcDoc={TEMPLATES[step.template_id as TemplateId]?.html
-                    .replaceAll("{{prenom}}", "Jean")
-                    .replaceAll("{{nom}}", "Dupont")
-                    .replaceAll("{{entreprise}}", "Cabinet XYZ")
-                    .replaceAll("{{lien_tracking}}", "#")
-                    .replaceAll("{{contenu}}", "")
-                    .replaceAll("{{pixel_url}}", "") || ""}
-                  className="w-full h-[300px] border-0"
-                  title={`Email ${i + 1}`}
-                />
+            ))}
+
+            {steps.length === 0 && (
+              <div className="bg-white rounded-xl border border-dashed border-slate-200 p-12 text-center">
+                <p className="text-slate-400 mb-3">Aucun email dans la séquence.</p>
+                {campaign.status === "draft" && (
+                  <button onClick={addStep} className="px-4 py-2 text-sm font-medium bg-slate-900 text-white rounded-lg">Ajouter un email</button>
+                )}
               </div>
-            </div>
-          ))}
-          {steps.length === 0 && (
-            <div className="bg-white rounded-xl border border-dashed border-slate-200 p-12 text-center">
-              <p className="text-slate-400">Aucun email configuré dans cette campagne.</p>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
 
-      {/* Tab: Stats */}
+      {/* ============ Tab: Stats ============ */}
       {tab === "Stats" && (
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-4">
@@ -273,21 +381,21 @@ export default function CampaignDetailPage() {
             </div>
           </div>
 
-          {/* Funnel visualization */}
           <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <h3 className="font-semibold text-slate-900 mb-4">Entonnoir de conversion</h3>
+            <h3 className="font-semibold text-slate-900 mb-4">Entonnoir</h3>
             <div className="space-y-3">
               {[
-                { label: "Envoyés", value: stats.sent || 0, color: "bg-slate-200" },
+                { label: "Envoyés", value: stats.sent || 0, color: "bg-slate-300" },
                 { label: "Ouverts", value: stats.opened || 0, color: "bg-cyan-400" },
                 { label: "Cliqués", value: stats.clicked || 0, color: "bg-violet-400" },
               ].map((item) => (
                 <div key={item.label} className="flex items-center gap-3">
                   <span className="w-16 text-xs text-slate-500 text-right">{item.label}</span>
-                  <div className="flex-1 bg-slate-50 rounded-full h-6 overflow-hidden">
-                    <div className={`h-full ${item.color} rounded-full transition-all`} style={{ width: `${stats.sent ? (item.value / stats.sent) * 100 : 0}%` }} />
+                  <div className="flex-1 bg-slate-50 rounded-full h-7 overflow-hidden">
+                    <div className={`h-full ${item.color} rounded-full transition-all flex items-center justify-end pr-2`} style={{ width: `${Math.max(stats.sent ? (item.value / stats.sent) * 100 : 0, 4)}%` }}>
+                      <span className="text-[10px] font-bold text-white">{item.value}</span>
+                    </div>
                   </div>
-                  <span className="w-10 text-xs font-medium text-slate-700 text-right">{item.value}</span>
                 </div>
               ))}
             </div>

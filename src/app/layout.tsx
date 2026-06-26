@@ -70,7 +70,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="bg-white text-slate-900 antialiased overflow-x-hidden min-h-dvh">
+      <body className="bg-white text-slate-900 antialiased overflow-x-hidden min-h-dvh font-sans">
         {children}
         <Analytics />
       </body>

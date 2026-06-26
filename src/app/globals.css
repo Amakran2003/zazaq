@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 @theme {
+  --font-sans: "Instrument Sans", system-ui, sans-serif;
   --font-display: "Syne", system-ui, sans-serif;
-  --font-body: "Instrument Sans", system-ui, sans-serif;
 
   --color-deep: #ffffff;
   --color-mid: #f8fafc;
