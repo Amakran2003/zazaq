@@ -277,7 +277,7 @@ export default function CampaignDetailPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <button onClick={() => router.push("/admin/campaigns")} className="text-xs text-slate-400 hover:text-slate-600 mb-1 inline-block">← Campagnes</button>
-          <h1 className="font-[var(--font-display)] text-2xl font-bold text-slate-900">{campaign.name}</h1>
+          <h1 className="[font-family:var(--font-display)] text-2xl font-bold text-slate-900">{campaign.name}</h1>
           <span className={`mt-1 inline-block px-2.5 py-0.5 text-xs font-medium rounded-full ${campaign.status === "sent" ? "bg-emerald-50 text-emerald-700" : campaign.status === "active" ? "bg-blue-50 text-blue-700" : "bg-slate-100 text-slate-600"}`}>{campaign.status}</span>
         </div>
         <button onClick={handleSend} disabled={saving} className="px-5 py-2.5 text-sm font-medium bg-slate-900 text-white rounded-full hover:bg-slate-800 disabled:opacity-50">

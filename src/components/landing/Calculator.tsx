@@ -19,7 +19,7 @@ export function Calculator() {
   return (
     <section id="calculateur" className="py-[clamp(4rem,10vw,7rem)] px-4 max-w-[1100px] mx-auto">
       <div data-reveal className="text-center max-w-lg mx-auto mb-10">
-        <h2 className="font-[var(--font-display)] text-[clamp(1.75rem,4vw,2.25rem)] font-bold tracking-tight text-slate-900 mb-3">
+        <h2 className="[font-family:var(--font-display)] text-[clamp(1.75rem,4vw,2.25rem)] font-bold tracking-tight text-slate-900 mb-3">
           Combien de temps pourriez-vous récupérer&nbsp;?
         </h2>
         <p className="text-slate-500">Estimation indicative à affiner lors d&apos;un échange.</p>
@@ -37,7 +37,7 @@ export function Calculator() {
         </GlassPanel>
         <GlassPanel variant="strong" className="p-6 text-center" aria-live="polite">
           <span className="block text-xs font-semibold uppercase tracking-[0.04em] text-slate-500 mb-3">Temps potentiellement automatisable</span>
-          <span className="block font-[var(--font-display)] text-[3rem] font-extrabold tracking-tight text-accent-cyan leading-none">{formatHours(recoverable)}</span>
+          <span className="block [font-family:var(--font-display)] text-[3rem] font-extrabold tracking-tight text-accent-cyan leading-none">{formatHours(recoverable)}</span>
           <span className="block mt-1 text-base text-slate-500">/ semaine</span>
           <p className="mt-4 text-xs text-slate-400 leading-relaxed">
             Basé sur 50&nbsp;% des tâches administratives répétitives. Le diagnostic gratuit permet de chiffrer votre situation.

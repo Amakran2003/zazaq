@@ -8,7 +8,7 @@ export function Navbar() {
         aria-label="Navigation principale"
         className="flex items-center gap-4 px-6 py-3 rounded-full border border-glass-border bg-white/70 backdrop-blur-[20px] backdrop-saturate-[120%] shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.06)]"
       >
-        <Link href="/" className="font-[var(--font-display)] font-extrabold text-lg tracking-tight mr-auto text-slate-900">
+        <Link href="/" className="[font-family:var(--font-display)] font-extrabold text-lg tracking-tight mr-auto text-slate-900">
           Zazaq
         </Link>
         <ul className="hidden md:flex gap-6 list-none m-0 p-0">

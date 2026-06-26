@@ -143,7 +143,7 @@ function ImportPageInner() {
   if (result) {
     return (
       <>
-        <h1 className="font-[var(--font-display)] text-2xl font-bold text-slate-900 mb-8">Import terminé</h1>
+        <h1 className="[font-family:var(--font-display)] text-2xl font-bold text-slate-900 mb-8">Import terminé</h1>
         <div className="bg-white rounded-xl border border-slate-200 p-8 text-center max-w-lg mx-auto">
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-50 flex items-center justify-center">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-emerald-600"><path d="M5 12l5 5L20 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -161,7 +161,7 @@ function ImportPageInner() {
 
   return (
     <>
-      <h1 className="font-[var(--font-display)] text-2xl font-bold text-slate-900 mb-8">Importer des contacts</h1>
+      <h1 className="[font-family:var(--font-display)] text-2xl font-bold text-slate-900 mb-8">Importer des contacts</h1>
 
       {/* List name */}
       {!existingListId && (

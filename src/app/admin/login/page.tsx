@@ -30,7 +30,7 @@ export default function LoginPage() {
     <div className="min-h-dvh flex items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="font-[var(--font-display)] text-2xl font-bold text-slate-900">Zazaq Admin</h1>
+          <h1 className="[font-family:var(--font-display)] text-2xl font-bold text-slate-900">Zazaq Admin</h1>
           <p className="text-sm text-slate-500 mt-1">Connectez-vous pour accéder au dashboard.</p>
         </div>
         <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200 p-6 space-y-4">

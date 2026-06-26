@@ -11,7 +11,7 @@ export default async function CompaniesPage() {
   return (
     <>
       <div className="flex items-center justify-between mb-8">
-        <h1 className="font-[var(--font-display)] text-2xl font-bold text-slate-900">Entreprises</h1>
+        <h1 className="[font-family:var(--font-display)] text-2xl font-bold text-slate-900">Entreprises</h1>
       </div>
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <table className="w-full text-sm">

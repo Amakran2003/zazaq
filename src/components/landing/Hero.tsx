@@ -37,7 +37,7 @@ export function Hero() {
         <p data-hero-eyebrow className="inline-block mb-4 text-xs font-semibold uppercase tracking-[0.1em] text-accent-cyan">
           Automatisation sur mesure
         </p>
-        <h1 data-hero-title className="font-[var(--font-display)] text-[clamp(2.25rem,5.5vw,3.25rem)] font-extrabold leading-[1.1] tracking-tight text-slate-900 mb-6">
+        <h1 data-hero-title className="[font-family:var(--font-display)] text-[clamp(2.25rem,5.5vw,3.25rem)] font-extrabold leading-[1.1] tracking-tight text-slate-900 mb-6">
           Combien d&apos;heures perdez-vous chaque semaine&nbsp;?
         </h1>
         <p data-hero-lead className="text-[clamp(1rem,2vw,1.125rem)] text-slate-500 max-w-[34rem] mb-8 leading-relaxed">
@@ -64,12 +64,12 @@ export function Hero() {
 
       <GlassPanel data-hero-card className="p-8">
         <div className="text-center">
-          <span className="block text-[2.5rem] font-[var(--font-display)] font-extrabold tracking-tight text-slate-300">2 min</span>
+          <span className="block text-[2.5rem] [font-family:var(--font-display)] font-extrabold tracking-tight text-slate-300">2 min</span>
           <span className="block text-sm text-slate-500 mt-1">par relance manuelle</span>
         </div>
         <div className="h-px bg-slate-100 my-6" />
         <div className="text-center">
-          <span className="block text-[2.5rem] font-[var(--font-display)] font-extrabold tracking-tight text-accent-cyan">0 min</span>
+          <span className="block text-[2.5rem] [font-family:var(--font-display)] font-extrabold tracking-tight text-accent-cyan">0 min</span>
           <span className="block text-sm text-slate-500 mt-1">avec une automatisation</span>
         </div>
         <p className="mt-6 text-center text-sm text-slate-400 leading-relaxed">

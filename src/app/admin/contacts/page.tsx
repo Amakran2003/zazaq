@@ -48,7 +48,7 @@ export default function ContactsPage() {
   return (
     <>
       <div className="flex items-center justify-between mb-8">
-        <h1 className="font-[var(--font-display)] text-2xl font-bold text-slate-900">Contacts</h1>
+        <h1 className="[font-family:var(--font-display)] text-2xl font-bold text-slate-900">Contacts</h1>
         <div className="flex gap-2">
           <Link href="/admin/contacts/import" className="px-4 py-2.5 text-sm font-medium border border-slate-200 text-slate-700 rounded-full hover:bg-slate-50 transition-colors">Importer Excel</Link>
           <button onClick={() => setShowCreate(true)} className="px-4 py-2.5 text-sm font-medium bg-slate-900 text-white rounded-full hover:bg-slate-800 transition-colors">+ Nouvelle liste</button>

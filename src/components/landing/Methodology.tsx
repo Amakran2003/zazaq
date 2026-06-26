@@ -14,7 +14,7 @@ export function Methodology() {
     <section id="methode" className="py-[clamp(4rem,10vw,7rem)] px-4 max-w-[1100px] mx-auto">
       <div data-reveal className="text-center max-w-2xl mx-auto mb-12">
         <p className="inline-block mb-4 text-xs font-semibold uppercase tracking-[0.1em] text-accent-cyan">Notre méthode</p>
-        <h2 className="font-[var(--font-display)] text-[clamp(1.75rem,4vw,2.25rem)] font-bold tracking-tight text-slate-900 mb-3">
+        <h2 className="[font-family:var(--font-display)] text-[clamp(1.75rem,4vw,2.25rem)] font-bold tracking-tight text-slate-900 mb-3">
           On regarde ensemble où vous perdez du temps
         </h2>
         <p className="text-slate-500">Une approche progressive : on forme l&apos;IA sur vos vrais besoins, pas l&apos;inverse.</p>
@@ -22,7 +22,7 @@ export function Methodology() {
       <div data-reveal-stagger className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {steps.map((step) => (
           <GlassPanel key={step.num} className="p-6">
-            <span className="block font-[var(--font-display)] text-xs font-bold text-accent-violet mb-3">{step.num}</span>
+            <span className="block [font-family:var(--font-display)] text-xs font-bold text-accent-violet mb-3">{step.num}</span>
             <h3 className="text-base font-semibold text-slate-900 mb-2">{step.title}</h3>
             <p className="text-sm text-slate-500 leading-relaxed">{step.desc}</p>
           </GlassPanel>

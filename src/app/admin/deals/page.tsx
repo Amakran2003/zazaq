@@ -31,7 +31,7 @@ export default async function DealsPage() {
 
   return (
     <>
-      <h1 className="font-[var(--font-display)] text-2xl font-bold text-slate-900 mb-8">Pipeline</h1>
+      <h1 className="[font-family:var(--font-display)] text-2xl font-bold text-slate-900 mb-8">Pipeline</h1>
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         {stages.map((stage) => (
           <div key={stage} className="bg-white rounded-xl border border-slate-200 p-4">

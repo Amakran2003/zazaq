@@ -11,7 +11,7 @@ export default async function CampaignsPage() {
   return (
     <>
       <div className="flex items-center justify-between mb-8">
-        <h1 className="font-[var(--font-display)] text-2xl font-bold text-slate-900">Campagnes</h1>
+        <h1 className="[font-family:var(--font-display)] text-2xl font-bold text-slate-900">Campagnes</h1>
         <Link href="/admin/campaigns/new" className="px-5 py-2.5 text-sm font-medium bg-slate-900 text-white rounded-full hover:bg-slate-800 transition-colors">+ Nouvelle campagne</Link>
       </div>
 

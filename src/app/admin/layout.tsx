@@ -11,7 +11,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="min-h-dvh flex bg-slate-50">
       <aside className="hidden lg:flex w-64 flex-col border-r border-slate-200 bg-white">
         <div className="px-6 py-5 border-b border-slate-100">
-          <Link href="/admin" className="font-[var(--font-display)] font-extrabold text-lg text-slate-900">
+          <Link href="/admin" className="[font-family:var(--font-display)] font-extrabold text-lg text-slate-900">
             Zazaq <span className="text-xs font-medium text-slate-400 ml-1">Admin</span>
           </Link>
         </div>

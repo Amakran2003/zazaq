@@ -66,7 +66,7 @@ export default function ListDetailPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <Link href="/admin/contacts" className="text-xs text-slate-400 hover:text-slate-600 mb-1 inline-block">← Contacts</Link>
-          <h1 className="font-[var(--font-display)] text-2xl font-bold text-slate-900">{listName}</h1>
+          <h1 className="[font-family:var(--font-display)] text-2xl font-bold text-slate-900">{listName}</h1>
           <p className="text-sm text-slate-500 mt-1">{members.length} contact{members.length > 1 ? "s" : ""}</p>
         </div>
         <div className="flex gap-2">

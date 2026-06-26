@@ -16,7 +16,7 @@ export function Offer() {
       <div data-reveal className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] items-start">
         <div>
           <p className="inline-block mb-4 text-xs font-semibold uppercase tracking-[0.1em] text-accent-cyan">Offre</p>
-          <h2 className="font-[var(--font-display)] text-[clamp(1.75rem,4vw,2.25rem)] font-bold tracking-tight text-slate-900 mb-4">Diagnostic Zazaq</h2>
+          <h2 className="[font-family:var(--font-display)] text-[clamp(1.75rem,4vw,2.25rem)] font-bold tracking-tight text-slate-900 mb-4">Diagnostic Zazaq</h2>
           <p className="text-[1.0625rem] text-slate-500 mb-8 max-w-lg leading-relaxed">
             Pendant 30 minutes, nous regardons ensemble où vous perdez du temps — sans jargon, sans engagement.
           </p>
@@ -32,7 +32,7 @@ export function Offer() {
         </div>
         <GlassPanel variant="strong" className="p-8">
           <span className="inline-block px-3 py-1 mb-4 text-xs font-semibold uppercase tracking-wider bg-slate-100 text-slate-600 rounded">30 min</span>
-          <h3 className="font-[var(--font-display)] text-xl font-bold text-slate-900 mb-3">Démonstration gratuite</h3>
+          <h3 className="[font-family:var(--font-display)] text-xl font-bold text-slate-900 mb-3">Démonstration gratuite</h3>
           <p className="text-[0.9375rem] text-slate-500 leading-relaxed mb-5">
             Découvrez ce qui peut être automatisé dans votre entreprise et estimez le temps potentiellement économisé.
           </p>

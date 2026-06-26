@@ -50,7 +50,7 @@ export default function NewCampaignPage() {
 
   return (
     <>
-      <h1 className="font-[var(--font-display)] text-2xl font-bold text-slate-900 mb-8">Nouvelle campagne</h1>
+      <h1 className="[font-family:var(--font-display)] text-2xl font-bold text-slate-900 mb-8">Nouvelle campagne</h1>
 
       <form onSubmit={handleCreate} className="max-w-xl space-y-6">
         <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-5">

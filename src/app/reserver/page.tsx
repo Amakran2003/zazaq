@@ -64,7 +64,7 @@ export default function BookingPage() {
             <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-accent-cyan/10 flex items-center justify-center">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-accent-cyan"><path d="M5 12l5 5L20 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </div>
-            <h1 className="font-[var(--font-display)] text-2xl font-bold text-slate-900 mb-3">Demande envoyée !</h1>
+            <h1 className="[font-family:var(--font-display)] text-2xl font-bold text-slate-900 mb-3">Demande envoyée !</h1>
             <p className="text-slate-500 mb-2">{selectedDay && `${formatFull(selectedDay)} à ${selectedSlot}`}</p>
             <p className="text-sm text-slate-400">Vous recevrez une confirmation à <strong className="text-slate-600">{email}</strong> sous 24h.</p>
           </GlassPanel>
@@ -81,7 +81,7 @@ export default function BookingPage() {
       <main className="pt-[clamp(3rem,8vw,5rem)] pb-12 px-4 max-w-[900px] mx-auto">
         <div className="text-center mb-10">
           <p className="inline-block mb-3 text-xs font-semibold uppercase tracking-[0.1em] text-accent-cyan">Réservation</p>
-          <h1 className="font-[var(--font-display)] text-[clamp(1.75rem,4vw,2.25rem)] font-bold tracking-tight text-slate-900 mb-2">
+          <h1 className="[font-family:var(--font-display)] text-[clamp(1.75rem,4vw,2.25rem)] font-bold tracking-tight text-slate-900 mb-2">
             Choisissez un créneau pour votre diagnostic
           </h1>
           <p className="text-slate-500">30 minutes · gratuit · en visio</p>

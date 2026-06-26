@@ -33,7 +33,7 @@ export default async function AdminDashboard() {
 
   return (
     <>
-      <h1 className="font-[var(--font-display)] text-2xl font-bold text-slate-900 mb-8">Dashboard</h1>
+      <h1 className="[font-family:var(--font-display)] text-2xl font-bold text-slate-900 mb-8">Dashboard</h1>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-10">
         {cards.map((card) => (
           <div key={card.label} className="bg-white rounded-xl border border-slate-200 p-5">
