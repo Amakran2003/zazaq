@@ -1,17 +1,27 @@
 import type { Metadata } from "next";
-import { Instrument_Sans, Syne } from "next/font/google";
+import localFont from "next/font/local";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
-const instrumentSans = Instrument_Sans({
+const instrumentSans = localFont({
+  src: [
+    { path: "../../public/fonts/instrument-sans-v4-latin-regular.woff2", weight: "400", style: "normal" },
+    { path: "../../public/fonts/instrument-sans-v4-latin-500.woff2", weight: "500", style: "normal" },
+    { path: "../../public/fonts/instrument-sans-v4-latin-600.woff2", weight: "600", style: "normal" },
+    { path: "../../public/fonts/instrument-sans-v4-latin-700.woff2", weight: "700", style: "normal" },
+  ],
   variable: "--font-body",
-  subsets: ["latin"],
+  display: "swap",
 });
 
-const syne = Syne({
+const syne = localFont({
+  src: [
+    { path: "../../public/fonts/syne-v24-latin-600.woff2", weight: "600", style: "normal" },
+    { path: "../../public/fonts/syne-v24-latin-700.woff2", weight: "700", style: "normal" },
+    { path: "../../public/fonts/syne-v24-latin-800.woff2", weight: "800", style: "normal" },
+  ],
   variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["600", "700", "800"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
