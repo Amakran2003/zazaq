@@ -19,15 +19,20 @@ export default function ListsPage() {
   const [creating, setCreating] = useState(false);
   const supabase = createClient();
 
-  const load = () => {
-    supabase.from("contact_lists").select("*, contact_list_members(count)").order("created_at", { ascending: false }).then(({ data }) => {
-      if (data) {
-        setLists(data.map((l) => ({
-          ...l,
-          member_count: (l.contact_list_members as { count: number }[])?.[0]?.count || 0,
-        })));
-      }
-    });
+  const load = async () => {
+    const { data } = await supabase.from("contact_lists").select("*").order("created_at", { ascending: false });
+    if (!data) return;
+
+    const listsWithCount: ContactList[] = await Promise.all(
+      data.map(async (l) => {
+        const { count } = await supabase
+          .from("contact_list_members")
+          .select("*", { count: "exact", head: true })
+          .eq("list_id", l.id);
+        return { ...l, member_count: count || 0 };
+      })
+    );
+    setLists(listsWithCount);
   };
 
   useEffect(() => { load(); }, []);
