@@ -1,22 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { TEMPLATES, type TemplateId } from "@/lib/email-templates";
-import {
-  ReactFlow,
-  addEdge,
-  useNodesState,
-  useEdgesState,
-  Controls,
-  Background,
-  type Connection,
-  type Node,
-  type Edge,
-} from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
-import { nodeTypes } from "@/components/admin/workflow/nodes";
+import type { Node } from "@xyflow/react";
 
 type Campaign = { id: string; name: string; status: string; list_id: string; stats: Record<string, number>; workflow_json: unknown; batch_config: Record<string, unknown> };
 type ContactStatus = {
@@ -52,16 +40,22 @@ const STATUS_COLORS: Record<string, string> = {
   refuse: "bg-red-50 text-red-700",
 };
 
-const TABS = ["Workflow", "Emails", "Contacts", "Stats"] as const;
+const TABS = ["Pipeline", "Emails", "Contacts", "Stats"] as const;
 type Tab = typeof TABS[number];
 
-const NODE_OPTIONS = [
-  { type: "trigger", label: "Trigger", data: { label: "Démarrage campagne" } },
-  { type: "email", label: "Email", data: { label: "Envoyer email", template: "premier_contact" } },
-  { type: "wait", label: "Attente", data: { label: "3 jours" } },
-  { type: "condition", label: "Condition", data: { label: "Si ouvert" } },
-  { type: "action", label: "Action", data: { label: "Transférer" } },
-];
+type PipelineStep = {
+  id: string;
+  type: "email" | "attente" | "condition" | "action";
+  label: string;
+  config: Record<string, string | number>;
+};
+
+const STEP_TYPES = [
+  { type: "email", label: "Email", icon: "✉️", defaultLabel: "Envoyer email", defaultConfig: { template: "premier_contact" } },
+  { type: "attente", label: "Attente", icon: "⏳", defaultLabel: "Attendre 3 jours", defaultConfig: { days: 3 } },
+  { type: "condition", label: "Condition", icon: "🔀", defaultLabel: "Si ouvert", defaultConfig: { condition: "opened" } },
+  { type: "action", label: "Action", icon: "⚡", defaultLabel: "Transférer", defaultConfig: { action: "transfer" } },
+] as const;
 
 export default function CampaignDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -69,16 +63,15 @@ export default function CampaignDetailPage() {
   const supabase = createClient();
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
-  const [tab, setTab] = useState<Tab>("Workflow");
+  const [tab, setTab] = useState<Tab>("Pipeline");
   const [contactStatuses, setContactStatuses] = useState<ContactStatus[]>([]);
   const [listContacts, setListContacts] = useState<ListContact[]>([]);
   const [availableLists, setAvailableLists] = useState<ContactList[]>([]);
   const [steps, setSteps] = useState<Step[]>([]);
   const [otherCampaigns, setOtherCampaigns] = useState<{ id: string; name: string }[]>([]);
 
-  // Workflow state
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([] as Node[]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([] as Edge[]);
+  // Pipeline state
+  const [pipeline, setPipeline] = useState<PipelineStep[]>([]);
   const [saving, setSaving] = useState(false);
 
   // Contacts state
@@ -99,8 +92,15 @@ export default function CampaignDetailPage() {
     const { data: c } = await supabase.from("campaigns").select("*").eq("id", id).single();
     if (c) {
       setCampaign(c as unknown as Campaign);
-      const wf = c.workflow_json as { nodes?: Node[]; edges?: Edge[] };
-      if (wf && wf.nodes) { setNodes(wf.nodes); setEdges(wf.edges || []); }
+      const wf = c.workflow_json;
+      if (Array.isArray(wf) && wf.length > 0 && wf[0]?.type) {
+        setPipeline(wf as PipelineStep[]);
+      } else if (wf && typeof wf === "object" && "nodes" in (wf as object)) {
+        const old = wf as { nodes?: Node[] };
+        if (old.nodes) {
+          setPipeline(old.nodes.map((n) => ({ id: n.id, type: (n.type === "wait" ? "attente" : n.type || "email") as PipelineStep["type"], label: (n.data as { label?: string })?.label || "", config: {} })));
+        }
+      }
       const bc = c.batch_config as Record<string, unknown>;
       if (bc) {
         setBatchSize((bc.size as number) || 100);
@@ -161,27 +161,35 @@ export default function CampaignDetailPage() {
 
   useEffect(() => { load(); }, [id]);
 
-  // --- Workflow ---
-  const onConnect = useCallback((params: Connection) => setEdges((eds) => addEdge(params, eds)), [setEdges]);
-
-  const addNode = (type: string, label: string, data: Record<string, unknown>) => {
-    const newNode: Node = {
-      id: `${type}-${Date.now()}`,
-      type,
-      position: { x: 250, y: (nodes.length + 1) * 120 },
-      data: { ...data, label },
-    };
-    setNodes((nds) => [...nds, newNode]);
+  // --- Pipeline ---
+  const addPipelineStep = (type: PipelineStep["type"]) => {
+    const def = STEP_TYPES.find((s) => s.type === type)!;
+    setPipeline([...pipeline, { id: `${type}-${Date.now()}`, type, label: def.defaultLabel, config: { ...def.defaultConfig } }]);
   };
 
-  const deleteNode = (nodeId: string) => {
-    setNodes((nds) => nds.filter((n) => n.id !== nodeId));
-    setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
+  const updatePipelineStep = (idx: number, field: string, value: string | number) => {
+    setPipeline(pipeline.map((s, i) => i === idx ? { ...s, [field]: value } : s));
   };
 
-  const saveWorkflow = async () => {
+  const updatePipelineConfig = (idx: number, key: string, value: string | number) => {
+    setPipeline(pipeline.map((s, i) => i === idx ? { ...s, config: { ...s.config, [key]: value } } : s));
+  };
+
+  const removePipelineStep = (idx: number) => {
+    setPipeline(pipeline.filter((_, i) => i !== idx));
+  };
+
+  const movePipelineStep = (idx: number, dir: -1 | 1) => {
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= pipeline.length) return;
+    const arr = [...pipeline];
+    [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
+    setPipeline(arr);
+  };
+
+  const savePipeline = async () => {
     setSaving(true);
-    await supabase.from("campaigns").update({ workflow_json: { nodes, edges } }).eq("id", id);
+    await supabase.from("campaigns").update({ workflow_json: pipeline }).eq("id", id);
     setSaving(false);
   };
 
@@ -284,35 +292,83 @@ export default function CampaignDetailPage() {
         ))}
       </div>
 
-      {/* ===== WORKFLOW TAB ===== */}
-      {tab === "Workflow" && (
+      {/* ===== PIPELINE TAB ===== */}
+      {tab === "Pipeline" && (
         <div className="space-y-4">
           <div className="flex items-center gap-2 flex-wrap">
-            {NODE_OPTIONS.map((opt) => (
-              <button key={opt.type} onClick={() => addNode(opt.type, opt.data.label, opt.data)} className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg hover:bg-slate-50">{opt.label}</button>
+            {STEP_TYPES.map((st) => (
+              <button key={st.type} onClick={() => addPipelineStep(st.type)} className="px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-1.5">
+                <span>{st.icon}</span> {st.label}
+              </button>
             ))}
-            <button onClick={saveWorkflow} disabled={saving} className="ml-auto px-4 py-1.5 text-xs font-medium bg-slate-900 text-white rounded-lg disabled:opacity-50">{saving ? "..." : "Sauvegarder"}</button>
+            <button onClick={savePipeline} disabled={saving} className="ml-auto px-4 py-1.5 text-xs font-medium bg-slate-900 text-white rounded-lg disabled:opacity-50">{saving ? "..." : "Sauvegarder"}</button>
           </div>
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden" style={{ height: 500 }}>
-            <ReactFlow
-              nodes={nodes}
-              edges={edges}
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
-              onConnect={onConnect}
-              nodeTypes={nodeTypes}
-              onNodeDoubleClick={(_, node) => {
-                const newLabel = prompt("Modifier le label:", (node.data as { label?: string }).label || "");
-                if (newLabel !== null) setNodes((nds) => nds.map((n) => n.id === node.id ? { ...n, data: { ...n.data, label: newLabel } } : n));
-              }}
-              onNodeContextMenu={(e, node) => { e.preventDefault(); if (confirm("Supprimer ce noeud ?")) deleteNode(node.id); }}
-              fitView
-            >
-              <Controls />
-              <Background gap={16} size={1} />
-            </ReactFlow>
-          </div>
-          <p className="text-xs text-slate-400">Double-clic pour modifier un noeud. Clic droit pour supprimer. Glissez pour connecter.</p>
+
+          {pipeline.length === 0 ? (
+            <div className="bg-white rounded-xl border-2 border-dashed border-slate-200 p-12 text-center">
+              <p className="text-slate-400 mb-3">Aucune étape dans la pipeline.</p>
+              <p className="text-xs text-slate-300">Ajoutez des étapes ci-dessus pour construire votre séquence.</p>
+            </div>
+          ) : (
+            <div className="space-y-0">
+              {pipeline.map((step, idx) => (
+                <div key={step.id}>
+                  {/* Connector line */}
+                  {idx > 0 && <div className="flex justify-center"><div className="w-px h-6 bg-slate-300" /></div>}
+
+                  <div className={`bg-white rounded-xl border p-4 transition-colors ${step.type === "email" ? "border-blue-200" : step.type === "attente" ? "border-amber-200" : step.type === "condition" ? "border-purple-200" : "border-red-200"}`}>
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">{STEP_TYPES.find((s) => s.type === step.type)?.icon}</span>
+                      <div className="flex-1">
+                        <input
+                          value={step.label}
+                          onChange={(e) => updatePipelineStep(idx, "label", e.target.value)}
+                          className="w-full text-sm font-medium text-slate-900 bg-transparent border-0 p-0 focus:outline-none focus:ring-0"
+                          placeholder="Nom de l'étape"
+                        />
+                        {/* Config fields based on type */}
+                        <div className="flex items-center gap-2 mt-2">
+                          {step.type === "email" && (
+                            <select value={step.config.template as string || "premier_contact"} onChange={(e) => updatePipelineConfig(idx, "template", e.target.value)} className="text-xs px-2 py-1 border border-slate-200 rounded">
+                              {Object.entries(TEMPLATES).map(([tid, t]) => <option key={tid} value={tid}>{t.name}</option>)}
+                            </select>
+                          )}
+                          {step.type === "attente" && (
+                            <div className="flex items-center gap-1">
+                              <input type="number" min={1} max={30} value={step.config.days as number || 3} onChange={(e) => updatePipelineConfig(idx, "days", Number(e.target.value))} className="w-14 text-xs px-2 py-1 border border-slate-200 rounded text-center" />
+                              <span className="text-xs text-slate-500">jours</span>
+                            </div>
+                          )}
+                          {step.type === "condition" && (
+                            <select value={step.config.condition as string || "opened"} onChange={(e) => updatePipelineConfig(idx, "condition", e.target.value)} className="text-xs px-2 py-1 border border-slate-200 rounded">
+                              <option value="opened">A ouvert</option>
+                              <option value="clicked">A cliqué</option>
+                              <option value="not_opened">N&apos;a pas ouvert</option>
+                              <option value="replied">A répondu</option>
+                            </select>
+                          )}
+                          {step.type === "action" && (
+                            <select value={step.config.action as string || "transfer"} onChange={(e) => updatePipelineConfig(idx, "action", e.target.value)} className="text-xs px-2 py-1 border border-slate-200 rounded">
+                              <option value="transfer">Transférer vers campagne</option>
+                              <option value="tag">Ajouter tag</option>
+                              <option value="status">Changer statut</option>
+                              <option value="stop">Arrêter séquence</option>
+                            </select>
+                          )}
+                        </div>
+                      </div>
+                      {/* Controls */}
+                      <div className="flex flex-col gap-0.5">
+                        <button onClick={() => movePipelineStep(idx, -1)} disabled={idx === 0} className="text-slate-300 hover:text-slate-600 disabled:opacity-30 text-xs">▲</button>
+                        <button onClick={() => movePipelineStep(idx, 1)} disabled={idx === pipeline.length - 1} className="text-slate-300 hover:text-slate-600 disabled:opacity-30 text-xs">▼</button>
+                      </div>
+                      <button onClick={() => removePipelineStep(idx)} className="text-xs text-red-400 hover:text-red-600 p-1">✕</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
