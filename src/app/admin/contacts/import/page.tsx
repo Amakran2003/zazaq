@@ -106,10 +106,13 @@ function ImportPageInner() {
 
   const handleImport = async () => {
     setImporting(true);
+    const VALID_FIELDS = ["email", "first_name", "last_name", "company", "phone", "status", "source", "notes"];
     const mapped = rows.map((row) => {
       const contact: Record<string, string> = {};
       for (const [col, field] of Object.entries(mapping)) {
-        if (field !== "__skip" && row[col]) contact[field] = row[col];
+        if (field !== "__skip" && row[col] && VALID_FIELDS.includes(field)) {
+          contact[field] = String(row[col]).trim();
+        }
       }
       return contact;
     }).filter((c) => c.email);
@@ -119,13 +122,15 @@ function ImportPageInner() {
 
     const BATCH_SIZE = 50;
     for (let i = 0; i < mapped.length; i += BATCH_SIZE) {
-      const batch = mapped.slice(i, i + BATCH_SIZE);
+      const batch = mapped.slice(i, i + BATCH_SIZE).map((c) => ({ ...c, source: c.source || "import_excel" }));
       const { data, error } = await supabase
         .from("contacts")
-        .upsert(batch.map((c) => ({ ...c, source: c.source || "import_excel" })), { onConflict: "email" })
+        .upsert(batch, { onConflict: "email" })
         .select("id");
-      if (error) errors += batch.length;
-      else {
+      if (error) {
+        console.error("Import error:", error);
+        errors += batch.length;
+      } else {
         imported += data.length;
         contactIds.push(...data.map((d) => d.id));
       }
