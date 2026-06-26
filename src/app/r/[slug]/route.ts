@@ -25,7 +25,7 @@ export async function GET(
     metadata: {},
   });
 
-  await supabase.rpc("increment_link_clicks", { link_id: link.id });
+  await supabase.rpc("increment_clicks", { row_id: link.id });
 
   const targetUrl = new URL(link.target_url || "/", request.url);
   targetUrl.searchParams.set("ref", slug);

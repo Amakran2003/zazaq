@@ -1,4 +1,4 @@
-export type TemplateId = "cabinets" | "welcome" | "relance" | "diagnostic" | "newsletter";
+export type TemplateId = "premier_contact" | "cabinets" | "welcome" | "relance" | "diagnostic" | "newsletter";
 
 export type TemplateVars = {
   prenom?: string;
@@ -42,11 +42,31 @@ const CTA_BUTTON = (text: string) =>
 </td></tr></table>`;
 
 const p = (text: string) => `<p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#475569;">${text}</p>`;
-const h2 = (text: string) => `<h2 style="margin:0 0 20px;font-size:18px;font-weight:600;color:#0f172a;line-height:1.4;">${text}</h2>`;
+const h2 = (text: string) => `<h2 style="margin:0 0 20px;font-family:'Syne',system-ui,sans-serif;font-size:18px;font-weight:700;color:#0f172a;line-height:1.4;letter-spacing:-0.01em;">${text}</h2>`;
 const divider = `<div style="height:1px;background:#f1f5f9;margin:24px 0;"></div>`;
 const bullet = (text: string) => `<table cellpadding="0" cellspacing="0" style="margin:0 0 8px;"><tr><td style="width:20px;vertical-align:top;padding-top:7px;"><div style="width:6px;height:6px;border-radius:50%;background:#0d9488;"></div></td><td style="font-size:15px;line-height:1.6;color:#475569;">${text}</td></tr></table>`;
 
 export const TEMPLATES: Record<TemplateId, { name: string; subject: string; html: string }> = {
+  premier_contact: {
+    name: "Premier contact",
+    subject: "{{prenom}}, combien de temps perdez-vous chaque semaine ?",
+    html: `${WRAPPER_START}
+${h2("Bonjour {{prenom}},")}
+${p("Je me permets de vous contacter directement.")}
+${p("Chez <strong>{{entreprise}}</strong>, combien de tâches sont encore faites manuellement alors qu'elles pourraient tourner <strong>automatiquement</strong> ?")}
+${divider}
+${p("Quelques exemples de ce que j'automatise pour des structures comme la vôtre :")}
+${bullet("Relances clients envoyées automatiquement selon des règles précises")}
+${bullet("Documents classés, renommés et routés sans intervention")}
+${bullet("CRM mis à jour en temps réel sans saisie manuelle")}
+${bullet("Rapports générés et envoyés chaque semaine")}
+${divider}
+${p("Je propose un <strong>diagnostic gratuit de 15 minutes</strong> — on regarde ensemble ce qui peut être simplifié concrètement.")}
+${p("Pas de présentation commerciale, pas d'engagement.")}
+${CTA_BUTTON("Réserver 15 min")}
+${p("Bonne journée,<br/><strong style=\"color:#0f172a;\">L'équipe Zazaq</strong>")}
+${WRAPPER_END}`,
+  },
   cabinets: {
     name: "Cabinets comptables",
     subject: "Automatisation + données sensibles — compatible ?",
