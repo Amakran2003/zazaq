@@ -14,18 +14,23 @@ export async function POST(request: NextRequest) {
   let errors = 0;
   const allIds: string[] = [];
 
+  // Deduplicate by email (keep last occurrence)
+  const deduped = new Map<string, Record<string, string>>();
+  for (const c of contacts) {
+    if (!c.email) continue;
+    const clean: Record<string, string> = {};
+    for (const key of VALID_FIELDS) {
+      if (c[key]) clean[key] = String(c[key]).trim();
+    }
+    if (!clean.email) continue;
+    if (!clean.source) clean.source = "import_excel";
+    deduped.set(clean.email.toLowerCase(), clean);
+  }
+  const uniqueContacts = Array.from(deduped.values());
+
   const BATCH = 100;
-  for (let i = 0; i < contacts.length; i += BATCH) {
-    const batch = contacts.slice(i, i + BATCH)
-      .filter((c: Record<string, string>) => c.email)
-      .map((c: Record<string, string>) => {
-        const clean: Record<string, string> = {};
-        for (const key of VALID_FIELDS) {
-          if (c[key]) clean[key] = String(c[key]).trim();
-        }
-        if (!clean.source) clean.source = "import_excel";
-        return clean;
-      });
+  for (let i = 0; i < uniqueContacts.length; i += BATCH) {
+    const batch = uniqueContacts.slice(i, i + BATCH);
 
     if (batch.length === 0) continue;
 
