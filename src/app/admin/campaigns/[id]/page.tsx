@@ -24,7 +24,33 @@ type ContactStatus = {
   opened_at: string | null; clicked_at: string | null;
   contacts: { email: string; first_name: string; last_name: string; company: string };
 };
+type ListContact = {
+  id: string; email: string; first_name: string; last_name: string; company: string; phone: string;
+  campaign_status?: string; opened_at?: string | null; clicked_at?: string | null; current_step?: number;
+};
+type ContactList = { id: string; name: string };
 type Step = { id: string; step_order: number; template_id: string; subject: string; delay_days: number };
+
+const STATUS_OPTIONS = [
+  { key: "all", label: "Tous" },
+  { key: "en_attente", label: "En attente" },
+  { key: "contacte", label: "Contacté" },
+  { key: "ouvert", label: "Ouvert" },
+  { key: "clique", label: "Cliqué" },
+  { key: "repondu", label: "Répondu" },
+  { key: "relance", label: "Relancé" },
+  { key: "refuse", label: "Refusé" },
+] as const;
+
+const STATUS_COLORS: Record<string, string> = {
+  en_attente: "bg-slate-100 text-slate-600",
+  contacte: "bg-blue-50 text-blue-700",
+  ouvert: "bg-cyan-50 text-cyan-700",
+  clique: "bg-violet-50 text-violet-700",
+  repondu: "bg-emerald-50 text-emerald-700",
+  relance: "bg-amber-50 text-amber-700",
+  refuse: "bg-red-50 text-red-700",
+};
 
 const TABS = ["Workflow", "Emails", "Contacts", "Stats"] as const;
 type Tab = typeof TABS[number];
@@ -45,6 +71,8 @@ export default function CampaignDetailPage() {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [tab, setTab] = useState<Tab>("Workflow");
   const [contactStatuses, setContactStatuses] = useState<ContactStatus[]>([]);
+  const [listContacts, setListContacts] = useState<ListContact[]>([]);
+  const [availableLists, setAvailableLists] = useState<ContactList[]>([]);
   const [steps, setSteps] = useState<Step[]>([]);
   const [otherCampaigns, setOtherCampaigns] = useState<{ id: string; name: string }[]>([]);
 
@@ -54,7 +82,7 @@ export default function CampaignDetailPage() {
   const [saving, setSaving] = useState(false);
 
   // Contacts state
-  const [filter, setFilter] = useState<"all" | "sent" | "opened" | "clicked" | "no_open">("all");
+  const [filter, setFilter] = useState<string>("all");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [transferTarget, setTransferTarget] = useState("");
 
@@ -79,6 +107,39 @@ export default function CampaignDetailPage() {
         setBatchFrequency((bc.frequency_hours as number) || 24);
         setBatchStatus((bc.status as string) || "paused");
       }
+
+      // Load contacts from linked list
+      if (c.list_id) {
+        const { data: members } = await supabase
+          .from("contact_list_members")
+          .select("contacts(id, email, first_name, last_name, company, phone)")
+          .eq("list_id", c.list_id);
+        
+        const { data: statuses } = await supabase
+          .from("campaign_contact_status")
+          .select("*")
+          .eq("campaign_id", id);
+
+        const statusMap = new Map<string, ContactStatus>();
+        if (statuses) statuses.forEach((s) => statusMap.set(s.contact_id, s as unknown as ContactStatus));
+
+        if (members) {
+          const contacts: ListContact[] = members
+            .map((m) => m.contacts as unknown as ListContact)
+            .filter(Boolean)
+            .map((contact) => {
+              const st = statusMap.get(contact.id);
+              return {
+                ...contact,
+                campaign_status: st?.status || "en_attente",
+                opened_at: st?.opened_at || null,
+                clicked_at: st?.clicked_at || null,
+                current_step: st?.current_step || 0,
+              };
+            });
+          setListContacts(contacts);
+        }
+      }
     }
 
     const { data: s } = await supabase.from("campaign_steps").select("*").eq("campaign_id", id).order("step_order");
@@ -93,6 +154,9 @@ export default function CampaignDetailPage() {
 
     const { data: others } = await supabase.from("campaigns").select("id, name").neq("id", id);
     if (others) setOtherCampaigns(others);
+
+    const { data: allLists } = await supabase.from("contact_lists").select("id, name").order("name");
+    if (allLists) setAvailableLists(allLists);
   };
 
   useEffect(() => { load(); }, [id]);
@@ -151,10 +215,9 @@ export default function CampaignDetailPage() {
   };
 
   // --- Contacts ---
-  const filteredContacts = contactStatuses.filter((cs) => {
+  const filteredContacts = listContacts.filter((c) => {
     if (filter === "all") return true;
-    if (filter === "no_open") return !cs.opened_at;
-    return cs.status === filter;
+    return c.campaign_status === filter;
   });
 
   const toggleSelect = (cid: string) => {
@@ -164,17 +227,22 @@ export default function CampaignDetailPage() {
   };
 
   const selectAll = () => {
-    selected.size === filteredContacts.length ? setSelected(new Set()) : setSelected(new Set(filteredContacts.map((c) => c.contact_id)));
+    selected.size === filteredContacts.length ? setSelected(new Set()) : setSelected(new Set(filteredContacts.map((c) => c.id)));
   };
 
   const handleTransfer = async () => {
     if (!transferTarget || selected.size === 0) return;
     for (const cid of Array.from(selected)) {
-      await supabase.from("campaign_contact_status").upsert({ campaign_id: transferTarget, contact_id: cid, current_step: 0, status: "pending" }, { onConflict: "campaign_id,contact_id" });
+      await supabase.from("campaign_contact_status").upsert({ campaign_id: transferTarget, contact_id: cid, current_step: 0, status: "en_attente" }, { onConflict: "campaign_id,contact_id" });
     }
     setSelected(new Set());
     setTransferTarget("");
     alert(`${selected.size} contact(s) transféré(s)`);
+  };
+
+  const handleChangeList = async (listId: string) => {
+    await supabase.from("campaigns").update({ list_id: listId }).eq("id", id);
+    load();
   };
 
   // --- Batch ---
@@ -302,10 +370,21 @@ export default function CampaignDetailPage() {
       {/* ===== CONTACTS TAB ===== */}
       {tab === "Contacts" && (
         <div className="space-y-4">
+          {/* List selector */}
+          <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-3">
+            <span className="text-sm font-medium text-slate-700">Liste liée :</span>
+            <select value={campaign.list_id || ""} onChange={(e) => handleChangeList(e.target.value)} className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-cyan/30">
+              <option value="">Aucune liste sélectionnée</option>
+              {availableLists.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+            </select>
+            <span className="text-xs text-slate-400">{listContacts.length} contact(s)</span>
+          </div>
+
+          {/* Filters */}
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex gap-1 bg-white rounded-lg border border-slate-200 p-1 text-xs">
-              {([["all", "Tous"], ["sent", "Envoyé"], ["opened", "Ouvert"], ["clicked", "Cliqué"], ["no_open", "Pas ouvert"]] as const).map(([key, label]) => (
-                <button key={key} onClick={() => setFilter(key)} className={`px-3 py-1.5 rounded-md font-medium transition-colors ${filter === key ? "bg-slate-900 text-white" : "text-slate-500 hover:text-slate-700"}`}>{label}</button>
+            <div className="flex gap-1 bg-white rounded-lg border border-slate-200 p-1 text-xs overflow-x-auto">
+              {STATUS_OPTIONS.map(({ key, label }) => (
+                <button key={key} onClick={() => setFilter(key)} className={`px-3 py-1.5 rounded-md font-medium transition-colors whitespace-nowrap ${filter === key ? "bg-slate-900 text-white" : "text-slate-500 hover:text-slate-700"}`}>{label}</button>
               ))}
             </div>
             <span className="text-xs text-slate-400">{filteredContacts.length} contact(s)</span>
@@ -314,6 +393,7 @@ export default function CampaignDetailPage() {
             </button>
           </div>
 
+          {/* Transfer bar */}
           {selected.size > 0 && (
             <div className="flex items-center gap-2 bg-accent-cyan/5 border border-accent-cyan/20 rounded-lg px-4 py-2">
               <span className="text-xs font-medium text-accent-cyan">{selected.size} sélectionné(s)</span>
@@ -325,6 +405,7 @@ export default function CampaignDetailPage() {
             </div>
           )}
 
+          {/* Table */}
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-slate-50 border-b border-slate-200">
@@ -339,21 +420,27 @@ export default function CampaignDetailPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredContacts.length > 0 ? filteredContacts.map((cs) => (
-                  <tr key={cs.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3"><input type="checkbox" checked={selected.has(cs.contact_id)} onChange={() => toggleSelect(cs.contact_id)} className="rounded" /></td>
+                {filteredContacts.length > 0 ? filteredContacts.map((c) => (
+                  <tr key={c.id} className="hover:bg-slate-50">
+                    <td className="px-4 py-3"><input type="checkbox" checked={selected.has(c.id)} onChange={() => toggleSelect(c.id)} className="rounded" /></td>
                     <td className="px-4 py-3">
-                      <p className="font-medium text-slate-900">{cs.contacts?.first_name} {cs.contacts?.last_name}</p>
-                      <p className="text-xs text-slate-400">{cs.contacts?.email}</p>
+                      <p className="font-medium text-slate-900">{c.first_name} {c.last_name}</p>
+                      <p className="text-xs text-slate-400">{c.email}</p>
                     </td>
-                    <td className="px-4 py-3 text-slate-600">{cs.contacts?.company || "—"}</td>
-                    <td className="px-4 py-3 text-slate-600">Email {(cs.current_step || 0) + 1}/{steps.length || 1}</td>
-                    <td className="px-4 py-3">{cs.opened_at ? <span className="text-xs text-cyan-700">Oui</span> : <span className="text-xs text-slate-300">—</span>}</td>
-                    <td className="px-4 py-3">{cs.clicked_at ? <span className="text-xs text-violet-700">Oui</span> : <span className="text-xs text-slate-300">—</span>}</td>
-                    <td className="px-4 py-3"><span className={`px-2 py-0.5 text-xs font-medium rounded-full ${cs.status === "clicked" ? "bg-violet-50 text-violet-700" : cs.status === "opened" ? "bg-cyan-50 text-cyan-700" : cs.status === "sent" ? "bg-blue-50 text-blue-700" : "bg-slate-100 text-slate-600"}`}>{cs.status}</span></td>
+                    <td className="px-4 py-3 text-slate-600">{c.company || "—"}</td>
+                    <td className="px-4 py-3 text-slate-600">{c.campaign_status !== "en_attente" ? `Email ${(c.current_step || 0) + 1}/${steps.length || 1}` : "—"}</td>
+                    <td className="px-4 py-3">{c.opened_at ? <span className="text-xs text-cyan-700 font-medium">Oui</span> : <span className="text-xs text-slate-300">—</span>}</td>
+                    <td className="px-4 py-3">{c.clicked_at ? <span className="text-xs text-violet-700 font-medium">Oui</span> : <span className="text-xs text-slate-300">—</span>}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${STATUS_COLORS[c.campaign_status || "en_attente"] || "bg-slate-100 text-slate-600"}`}>
+                        {STATUS_OPTIONS.find((s) => s.key === c.campaign_status)?.label || c.campaign_status}
+                      </span>
+                    </td>
                   </tr>
                 )) : (
-                  <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">Aucun contact envoyé. Configurez le batch et lancez la campagne.</td></tr>
+                  <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">
+                    {campaign.list_id ? "Aucun contact dans cette liste." : "Sélectionnez une liste de contacts ci-dessus."}
+                  </td></tr>
                 )}
               </tbody>
             </table>
