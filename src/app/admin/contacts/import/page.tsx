@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import * as XLSX from "xlsx";
 import { createClient } from "@/lib/supabase/client";
 
@@ -47,13 +48,36 @@ function autoMap(headers: string[]): ColumnMapping {
 }
 
 export default function ImportPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-400">Chargement...</div>}>
+      <ImportPageInner />
+    </Suspense>
+  );
+}
+
+function ImportPageInner() {
+  const searchParams = useSearchParams();
+  const existingListId = searchParams.get("list");
+
   const [file, setFile] = useState<File | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
   const [rows, setRows] = useState<Record<string, string>[]>([]);
   const [mapping, setMapping] = useState<ColumnMapping>({});
   const [importing, setImporting] = useState(false);
-  const [result, setResult] = useState<{ imported: number; updated: number; errors: number } | null>(null);
+  const [result, setResult] = useState<{ imported: number; errors: number; listId: string } | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [listName, setListName] = useState("");
+  const [existingListName, setExistingListName] = useState("");
+
+  const supabase = createClient();
+
+  useEffect(() => {
+    if (existingListId) {
+      supabase.from("contact_lists").select("name").eq("id", existingListId).single().then(({ data }) => {
+        if (data) setExistingListName(data.name);
+      });
+    }
+  }, [existingListId]);
 
   const processFile = useCallback((f: File) => {
     setFile(f);
@@ -85,15 +109,13 @@ export default function ImportPage() {
     const mapped = rows.map((row) => {
       const contact: Record<string, string> = {};
       for (const [col, field] of Object.entries(mapping)) {
-        if (field !== "__skip" && row[col]) {
-          contact[field] = row[col];
-        }
+        if (field !== "__skip" && row[col]) contact[field] = row[col];
       }
       return contact;
     }).filter((c) => c.email);
 
-    const supabase = createClient();
-    let imported = 0, updated = 0, errors = 0;
+    let imported = 0, errors = 0;
+    const contactIds: string[] = [];
 
     const BATCH_SIZE = 50;
     for (let i = 0; i < mapped.length; i += BATCH_SIZE) {
@@ -102,14 +124,29 @@ export default function ImportPage() {
         .from("contacts")
         .upsert(batch.map((c) => ({ ...c, source: c.source || "import_excel" })), { onConflict: "email" })
         .select("id");
-      if (error) {
-        errors += batch.length;
-      } else {
+      if (error) errors += batch.length;
+      else {
         imported += data.length;
+        contactIds.push(...data.map((d) => d.id));
       }
     }
 
-    setResult({ imported, updated, errors });
+    // Create or use existing list and assign contacts
+    let targetListId = existingListId || "";
+    if (!targetListId && listName.trim()) {
+      const { data: newList } = await supabase.from("contact_lists").insert({ name: listName.trim() }).select("id").single();
+      if (newList) targetListId = newList.id;
+    }
+
+    if (targetListId && contactIds.length > 0) {
+      const members = contactIds.map((cid) => ({ list_id: targetListId, contact_id: cid }));
+      const MEMBER_BATCH = 100;
+      for (let i = 0; i < members.length; i += MEMBER_BATCH) {
+        await supabase.from("contact_list_members").upsert(members.slice(i, i + MEMBER_BATCH), { onConflict: "list_id,contact_id" });
+      }
+    }
+
+    setResult({ imported, errors, listId: targetListId });
     setImporting(false);
   };
 
@@ -117,13 +154,16 @@ export default function ImportPage() {
     return (
       <>
         <h1 className="font-[var(--font-display)] text-2xl font-bold text-slate-900 mb-8">Import terminé</h1>
-        <div className="bg-white rounded-xl border border-slate-200 p-8 text-center max-w-lg">
+        <div className="bg-white rounded-xl border border-slate-200 p-8 text-center max-w-lg mx-auto">
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-50 flex items-center justify-center">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-emerald-600"><path d="M5 12l5 5L20 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </div>
           <p className="text-lg font-semibold text-slate-900 mb-2">{result.imported} contacts importés</p>
-          {result.errors > 0 && <p className="text-sm text-red-500">{result.errors} erreurs</p>}
-          <a href="/admin/contacts" className="inline-block mt-6 px-4 py-2 text-sm font-medium bg-slate-900 text-white rounded-lg hover:bg-slate-800">Voir les contacts</a>
+          {result.errors > 0 && <p className="text-sm text-red-500 mb-2">{result.errors} erreurs</p>}
+          <div className="flex justify-center gap-3 mt-6">
+            {result.listId && <a href={`/admin/contacts/${result.listId}`} className="px-4 py-2 text-sm font-medium bg-slate-900 text-white rounded-lg hover:bg-slate-800">Voir la liste</a>}
+            <a href="/admin/contacts" className="px-4 py-2 text-sm font-medium border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50">Toutes les listes</a>
+          </div>
         </div>
       </>
     );
@@ -131,7 +171,21 @@ export default function ImportPage() {
 
   return (
     <>
-      <h1 className="font-[var(--font-display)] text-2xl font-bold text-slate-900 mb-8">Importer des prospects</h1>
+      <h1 className="font-[var(--font-display)] text-2xl font-bold text-slate-900 mb-8">Importer des contacts</h1>
+
+      {/* List name */}
+      {!existingListId && (
+        <div className="bg-white rounded-xl border border-slate-200 p-5 mb-6">
+          <label className="text-sm font-medium text-slate-700 mb-2 block">Nom de la liste</label>
+          <input value={listName} onChange={(e) => setListName(e.target.value)} placeholder="Ex: Experts comptables Q3" className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan/30" />
+          <p className="text-xs text-slate-400 mt-1.5">Les contacts importés seront ajoutés à cette liste.</p>
+        </div>
+      )}
+      {existingListId && existingListName && (
+        <div className="bg-accent-cyan/5 border border-accent-cyan/20 rounded-xl px-5 py-3 mb-6 text-sm text-accent-cyan">
+          Import dans la liste : <strong>{existingListName}</strong>
+        </div>
+      )}
 
       {!file ? (
         <div
@@ -156,19 +210,14 @@ export default function ImportPage() {
                 <p className="font-medium text-slate-900">{file.name}</p>
                 <p className="text-sm text-slate-400">{rows.length} lignes détectées</p>
               </div>
-              <button onClick={() => { setFile(null); setHeaders([]); setRows([]); }} className="text-sm text-slate-500 hover:text-slate-900">Changer de fichier</button>
+              <button onClick={() => { setFile(null); setHeaders([]); setRows([]); }} className="text-sm text-slate-500 hover:text-slate-900">Changer</button>
             </div>
-
             <h2 className="font-semibold text-slate-900 mb-3">Mapping des colonnes</h2>
             <div className="grid gap-3 sm:grid-cols-2">
               {headers.map((h) => (
                 <div key={h} className="flex items-center gap-3">
                   <span className="text-sm text-slate-600 min-w-[120px] truncate" title={h}>{h}</span>
-                  <select
-                    value={mapping[h] || "__skip"}
-                    onChange={(e) => setMapping({ ...mapping, [h]: e.target.value })}
-                    className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-cyan/30"
-                  >
+                  <select value={mapping[h] || "__skip"} onChange={(e) => setMapping({ ...mapping, [h]: e.target.value })} className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-cyan/30">
                     {FIELDS.map((f) => <option key={f.key} value={f.key}>{f.label}{f.required ? " *" : ""}</option>)}
                   </select>
                 </div>
@@ -177,7 +226,7 @@ export default function ImportPage() {
           </div>
 
           <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6 overflow-x-auto">
-            <h2 className="font-semibold text-slate-900 mb-3">Aperçu (5 premières lignes)</h2>
+            <h2 className="font-semibold text-slate-900 mb-3">Aperçu</h2>
             <table className="w-full text-xs">
               <thead className="bg-slate-50">
                 <tr>{headers.filter((h) => mapping[h] !== "__skip").map((h) => <th key={h} className="px-3 py-2 text-left font-medium text-slate-500">{mapping[h]}</th>)}</tr>
@@ -190,16 +239,11 @@ export default function ImportPage() {
             </table>
           </div>
 
-          <button
-            onClick={handleImport}
-            disabled={importing || !Object.values(mapping).includes("email")}
-            className="px-6 py-3 text-sm font-semibold bg-slate-900 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50 transition-colors"
-          >
+          <button onClick={handleImport} disabled={importing || !Object.values(mapping).includes("email") || (!existingListId && !listName.trim())} className="px-6 py-3 text-sm font-semibold bg-slate-900 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50 transition-colors">
             {importing ? "Import en cours..." : `Importer ${rows.length} contacts`}
           </button>
-          {!Object.values(mapping).includes("email") && (
-            <p className="mt-2 text-sm text-red-500">Vous devez mapper au moins une colonne vers "Email".</p>
-          )}
+          {!Object.values(mapping).includes("email") && <p className="mt-2 text-sm text-red-500">Mappez au moins une colonne vers &quot;Email&quot;.</p>}
+          {!existingListId && !listName.trim() && <p className="mt-2 text-sm text-amber-600">Donnez un nom à la liste avant d&apos;importer.</p>}
         </>
       )}
     </>
