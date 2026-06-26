@@ -18,44 +18,57 @@ export async function POST(request: NextRequest) {
 
   if (!campaign) return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
 
-  // Determine segment filter
-  let query = supabase.from("contacts").select("*");
-  if (campaign.segment && campaign.segment !== "all") {
-    if (campaign.segment === "leads") query = query.eq("status", "lead");
-    else if (campaign.segment === "prospects") query = query.eq("status", "prospect");
-    else if (campaign.segment === "clients") query = query.eq("status", "client");
+  // Get first step of the sequence
+  const { data: steps } = await supabase
+    .from("campaign_steps")
+    .select("*")
+    .eq("campaign_id", campaignId)
+    .order("step_order");
+
+  const firstStep = steps?.[0];
+  if (!firstStep) return NextResponse.json({ error: "No steps in campaign" }, { status: 400 });
+
+  // Get contacts from the campaign's list
+  let contacts: { id: string; email: string; first_name: string; last_name: string; company: string }[] = [];
+
+  if (campaign.list_id) {
+    const { data: members } = await supabase
+      .from("contact_list_members")
+      .select("contacts(id, email, first_name, last_name, company)")
+      .eq("list_id", campaign.list_id);
+
+    contacts = (members || []).map((m) => m.contacts as unknown as typeof contacts[0]).filter(Boolean);
+  } else {
+    const { data } = await supabase.from("contacts").select("id, email, first_name, last_name, company");
+    contacts = data || [];
   }
 
-  const { data: contacts } = await query;
-  if (!contacts || contacts.length === 0) {
-    return NextResponse.json({ error: "No contacts in segment" }, { status: 400 });
+  if (contacts.length === 0) {
+    return NextResponse.json({ error: "No contacts in list" }, { status: 400 });
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://zazaq.vercel.app";
   let sent = 0, errors = 0;
 
-  // Detect which template is used
-  const templateId = Object.keys(TEMPLATES).find(
-    (k) => TEMPLATES[k as TemplateId].html === campaign.html_content
-  ) as TemplateId | undefined;
-
   for (const contact of contacts) {
     try {
-      // Generate unique tracking link for this contact+campaign
-      const slug = `c-${campaignId.slice(0, 8)}-${contact.id.slice(0, 8)}-${randomUUID().slice(0, 6)}`;
+      // Auto-generate unique tracking link
+      const slug = `c${campaignId.slice(0, 6)}-${contact.id.slice(0, 6)}-${randomUUID().slice(0, 6)}`;
 
       await supabase.from("tracking_links").insert({
         slug,
         name: `${campaign.name} — ${contact.email}`,
         campaign_id: campaignId,
-        target_url: "/",
+        target_url: "/reserver",
       });
 
       const pixelUrl = `${baseUrl}/api/track/open?cid=${campaignId}&uid=${contact.id}`;
       const trackingLink = `${baseUrl}/r/${slug}`;
 
+      const templateId = firstStep.template_id as TemplateId;
       let subject: string, html: string;
-      if (templateId) {
+
+      if (templateId && TEMPLATES[templateId]) {
         const rendered = renderTemplate(templateId, {
           prenom: contact.first_name || "",
           nom: contact.last_name || "",
@@ -66,10 +79,9 @@ export async function POST(request: NextRequest) {
         subject = rendered.subject;
         html = rendered.html;
       } else {
-        subject = campaign.subject || campaign.name;
-        html = (campaign.html_content || "")
+        subject = firstStep.subject || campaign.name;
+        html = (firstStep.html_content || "")
           .replaceAll("{{prenom}}", contact.first_name || "")
-          .replaceAll("{{nom}}", contact.last_name || "")
           .replaceAll("{{entreprise}}", contact.company || "")
           .replaceAll("{{lien_tracking}}", trackingLink)
           .replaceAll("{{pixel_url}}", pixelUrl);
@@ -77,11 +89,19 @@ export async function POST(request: NextRequest) {
 
       await sendEmail({ to: contact.email, subject, html });
 
+      // Track per-contact status
+      await supabase.from("campaign_contact_status").upsert({
+        campaign_id: campaignId,
+        contact_id: contact.id,
+        current_step: 0,
+        status: "sent",
+      }, { onConflict: "campaign_id,contact_id" });
+
       await supabase.from("interactions").insert({
         contact_id: contact.id,
         type: "email_sent",
         campaign_id: campaignId,
-        metadata: { subject, tracking_slug: slug },
+        metadata: { subject, step: 0, tracking_slug: slug },
       });
 
       sent++;
@@ -90,7 +110,6 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Update campaign stats
   await supabase.from("campaigns").update({
     status: "sent",
     sent_at: new Date().toISOString(),

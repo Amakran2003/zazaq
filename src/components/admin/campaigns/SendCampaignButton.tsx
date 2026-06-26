@@ -8,7 +8,7 @@ export function SendCampaignButton({ campaignId }: { campaignId: string }) {
   const router = useRouter();
 
   const handleSend = async () => {
-    if (!confirm("Envoyer cette campagne à tous les contacts du segment ?")) return;
+    if (!confirm("Envoyer le premier email de la séquence à tous les contacts de la liste ?")) return;
     setSending(true);
     await fetch("/api/campaigns/send", {
       method: "POST",

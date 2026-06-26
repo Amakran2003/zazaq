@@ -17,7 +17,6 @@ export async function GET(request: NextRequest) {
         metadata: { url, user_agent: request.headers.get("user-agent") || "" },
       });
 
-      // Update campaign stats
       const { data: campaign } = await supabase
         .from("campaigns")
         .select("stats")
@@ -30,6 +29,12 @@ export async function GET(request: NextRequest) {
           stats: { ...stats, clicked: (stats.clicked || 0) + 1 },
         }).eq("id", cid);
       }
+
+      // Update per-contact status
+      await supabase.from("campaign_contact_status").update({
+        status: "clicked",
+        clicked_at: new Date().toISOString(),
+      }).eq("campaign_id", cid).eq("contact_id", uid);
     } catch {
       // Don't fail the redirect
     }

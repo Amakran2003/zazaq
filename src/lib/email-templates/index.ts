@@ -7,6 +7,7 @@ export type TemplateVars = {
   lien_tracking?: string;
   sujet?: string;
   contenu?: string;
+  pixel_url?: string;
 };
 
 const WRAPPER_START = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
