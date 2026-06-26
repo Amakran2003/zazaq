@@ -106,52 +106,31 @@ function ImportPageInner() {
 
   const handleImport = async () => {
     setImporting(true);
-    const VALID_FIELDS = ["email", "first_name", "last_name", "company", "phone", "status", "source", "notes"];
     const mapped = rows.map((row) => {
       const contact: Record<string, string> = {};
       for (const [col, field] of Object.entries(mapping)) {
-        if (field !== "__skip" && row[col] && VALID_FIELDS.includes(field)) {
+        if (field !== "__skip" && row[col]) {
           contact[field] = String(row[col]).trim();
         }
       }
       return contact;
     }).filter((c) => c.email);
 
-    let imported = 0, errors = 0;
-    const contactIds: string[] = [];
-
-    const BATCH_SIZE = 50;
-    for (let i = 0; i < mapped.length; i += BATCH_SIZE) {
-      const batch = mapped.slice(i, i + BATCH_SIZE).map((c) => ({ ...c, source: c.source || "import_excel" }));
-      const { data, error } = await supabase
-        .from("contacts")
-        .upsert(batch, { onConflict: "email" })
-        .select("id");
-      if (error) {
-        console.error("Import error:", error);
-        errors += batch.length;
-      } else {
-        imported += data.length;
-        contactIds.push(...data.map((d) => d.id));
-      }
+    try {
+      const res = await fetch("/api/contacts/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contacts: mapped,
+          list_id: existingListId || undefined,
+          new_list_name: !existingListId ? listName.trim() : undefined,
+        }),
+      });
+      const data = await res.json();
+      setResult({ imported: data.imported || 0, errors: data.errors || 0, listId: data.listId || "" });
+    } catch {
+      setResult({ imported: 0, errors: mapped.length, listId: "" });
     }
-
-    // Create or use existing list and assign contacts
-    let targetListId = existingListId || "";
-    if (!targetListId && listName.trim()) {
-      const { data: newList } = await supabase.from("contact_lists").insert({ name: listName.trim() }).select("id").single();
-      if (newList) targetListId = newList.id;
-    }
-
-    if (targetListId && contactIds.length > 0) {
-      const members = contactIds.map((cid) => ({ list_id: targetListId, contact_id: cid }));
-      const MEMBER_BATCH = 100;
-      for (let i = 0; i < members.length; i += MEMBER_BATCH) {
-        await supabase.from("contact_list_members").upsert(members.slice(i, i + MEMBER_BATCH), { onConflict: "list_id,contact_id" });
-      }
-    }
-
-    setResult({ imported, errors, listId: targetListId });
     setImporting(false);
   };
 
