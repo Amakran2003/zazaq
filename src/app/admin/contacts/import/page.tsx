@@ -127,8 +127,14 @@ function ImportPageInner() {
         }),
       });
       const data = await res.json();
-      setResult({ imported: data.imported || 0, errors: data.errors || 0, listId: data.listId || "" });
-    } catch {
+      if (!res.ok) {
+        console.error("Import API error:", res.status, data);
+        setResult({ imported: 0, errors: mapped.length, listId: "" });
+      } else {
+        setResult({ imported: data.imported || 0, errors: data.errors || 0, listId: data.listId || "" });
+      }
+    } catch (err) {
+      console.error("Import fetch error:", err);
       setResult({ imported: 0, errors: mapped.length, listId: "" });
     }
     setImporting(false);

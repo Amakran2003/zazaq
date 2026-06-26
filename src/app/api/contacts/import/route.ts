@@ -4,15 +4,19 @@ import { createAdminClient } from "@/lib/supabase/admin";
 const VALID_FIELDS = ["email", "first_name", "last_name", "company", "phone", "status", "source", "notes"];
 
 export async function POST(request: NextRequest) {
-  const { contacts, list_id, new_list_name } = await request.json();
-  if (!Array.isArray(contacts) || contacts.length === 0) {
-    return NextResponse.json({ error: "No contacts provided" }, { status: 400 });
-  }
+  try {
+    const body = await request.json();
+    const { contacts, list_id, new_list_name } = body;
+    if (!Array.isArray(contacts) || contacts.length === 0) {
+      return NextResponse.json({ error: "No contacts provided" }, { status: 400 });
+    }
 
-  const supabase = createAdminClient();
-  let imported = 0;
-  let errors = 0;
-  const allIds: string[] = [];
+    console.log("[import] Received", contacts.length, "contacts, list_id:", list_id, "new_list_name:", new_list_name);
+
+    const supabase = createAdminClient();
+    let imported = 0;
+    let errors = 0;
+    const allIds: string[] = [];
 
   // Deduplicate by email (keep last occurrence)
   const deduped = new Map<string, Record<string, string>>();
@@ -40,9 +44,10 @@ export async function POST(request: NextRequest) {
       .select("id");
 
     if (error) {
-      console.error("Import batch error:", error.message);
+      console.error("[import] Upsert error:", error.message, error.code, error.details);
       errors += batch.length;
     } else {
+      console.log("[import] Upserted", data?.length, "contacts");
       imported += (data?.length || 0);
       allIds.push(...(data || []).map((d) => d.id));
     }
@@ -68,5 +73,10 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ imported, errors, listId: targetListId });
+    console.log("[import] Done. imported:", imported, "errors:", errors, "listId:", targetListId);
+    return NextResponse.json({ imported, errors, listId: targetListId });
+  } catch (err) {
+    console.error("[import] Unhandled error:", err);
+    return NextResponse.json({ error: "Internal server error", details: String(err) }, { status: 500 });
+  }
 }
